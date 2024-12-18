@@ -24,8 +24,29 @@ event cards: when drawn -> used
 flashflood: discard all naked gubs
 G U B cards: win logic, if tie, lowest ammount of cards in hand wins
 
+possibly make it a actuial 2
+
+
+Goals:
+1. Make the deck
+
+2. Make the player
+
+
+
 
 """
+
+cards_info = {
+    "gub": {"number_of_cards": 8},
+    "spear": {"number_of_cards": 8},
+    "mushroom": {"number_of_cards": 8},
+    "toad_rida": {"number_of_cards": 8},
+    "G": {"number_of_cards": 8},
+    "U": {"number_of_cards": 8},
+    "B": {"number_of_cards": 8},
+    "flash_flood": {"number_of_cards": 8},
+}
 
 
 class Player:
