@@ -1,11 +1,11 @@
 from tkinter import *
 
 window = Tk()
-window.title('Gubs')
-window.configure(background='#5c4d42')
+window.title("Gubs")
+window.configure(background="#5c4d42")
 
-photo1 = PhotoImage(file='gub_card.png')
-Label(window, image=photo1, background='#5c4d42').grid(row=0, column=0, sticky=W)
+photo1 = PhotoImage(file="gub_card.png")
+Label(window, image=photo1, background="#5c4d42").grid(row=0, column=0, sticky=W)
 
 window.mainloop()
 
@@ -27,6 +27,8 @@ G U B cards: win logic, if tie, lowest ammount of cards in hand wins
 
 """
 
+
 class Player:
+
     def __init__(self, name):
         self.name = name
