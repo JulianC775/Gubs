@@ -84,6 +84,12 @@ class Deck:
         self.cards = shuffled_cards
 
 
+class Player:
+
+    def __init__(self, name):
+        self.name = name
+
+
 deck = Deck()
 
 print(deck)
