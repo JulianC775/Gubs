@@ -1,5 +1,5 @@
 import random
-
+#OUTDATED, just keeping for logic
 # from tkinter import *
 
 # window = Tk()
