@@ -45,24 +45,124 @@ Get both frontend and backend projects initialized and running locally.
 - [ ] Test: Run `npm run dev` - server should start on port 5000
 
 #### 0.2 Frontend Setup
-- [ ] Create React app: `npm create vite@latest gubs-frontend -- --template react`
-- [ ] Navigate to frontend: `cd gubs-frontend`
-- [ ] Install dependencies: `npm install`
-- [ ] Install additional packages:
+
+**Step 1: Create React App with Vite**
+- [ ] From the project root directory (`Gubs/`), create the React app:
+  ```bash
+  npm create vite@latest frontend -- --template react
+  ```
+  - When prompted, select: **React** framework and **JavaScript** variant (or TypeScript if preferred)
+  - This creates a `frontend/` directory in your monorepo
+
+**Step 2: Navigate and Install Base Dependencies**
+- [ ] Navigate to frontend directory:
+  ```bash
+  cd frontend
+  ```
+- [ ] Install base dependencies:
+  ```bash
+  npm install
+  ```
+  - This installs React, Vite, and all default dependencies from `package.json`
+
+**Step 3: Install Additional Packages**
+- [ ] Install Socket.IO client and Axios:
   ```bash
   npm install socket.io-client axios
   ```
-- [ ] Create folder structure:
+  - `socket.io-client`: For real-time WebSocket communication with backend
+  - `axios`: For making HTTP requests to REST API endpoints
+
+**Step 4: Create Folder Structure**
+- [ ] Create the following directories inside `src/`:
+  ```bash
+  # From frontend/ directory
+  mkdir src/components src/pages src/hooks src/services src/utils src/styles
+  ```
+  Or manually create:
   ```
   src/
-    components/
-    pages/
-    hooks/
-    services/
-    utils/
-    styles/
+    components/     # Reusable UI components (Card, Hand, Deck, etc.)
+    pages/          # Page-level components (Home, Lobby, Game)
+    hooks/          # Custom React hooks (useGame, useSocket)
+    services/       # API and Socket.IO service files
+    utils/          # Helper functions (card utilities, etc.)
+    styles/         # CSS or styling files
   ```
-- [ ] Test: Run `npm run dev` - React app should open in browser
+
+**Step 5: Create Environment Variables**
+- [ ] Create `.env` file in `frontend/` directory:
+  ```bash
+  # From frontend/ directory
+  echo "VITE_API_URL=http://localhost:5000" > .env
+  echo "VITE_SOCKET_URL=http://localhost:5000" >> .env
+  ```
+  Or manually create `frontend/.env` with:
+  ```
+  VITE_API_URL=http://localhost:5000
+  VITE_SOCKET_URL=http://localhost:5000
+  ```
+  - Note: Vite requires `VITE_` prefix for environment variables
+  - These URLs point to your backend server
+
+**Step 6: Update App.jsx (Basic Setup)**
+- [ ] Replace default `src/App.jsx` content with a simple test:
+  ```jsx
+  function App() {
+    return (
+      <div style={{ textAlign: 'center', marginTop: '50px' }}>
+        <h1>Gubs Card Game</h1>
+        <p>Frontend is running!</p>
+        <p>Backend API: {import.meta.env.VITE_API_URL}</p>
+      </div>
+    );
+  }
+
+  export default App;
+  ```
+
+**Step 7: Test the Frontend**
+- [ ] Start the development server:
+  ```bash
+  npm run dev
+  ```
+  - Frontend should start on `http://localhost:5173` (or another port if 5173 is busy)
+  - Browser should automatically open
+  - You should see "Gubs Card Game" heading and "Frontend is running!" message
+
+**Step 8: Verify Backend Connection (Optional)**
+- [ ] Make sure backend is running (`npm run dev` in `backend/` directory)
+- [ ] Test API connection by adding this to `src/App.jsx`:
+  ```jsx
+  import { useState, useEffect } from 'react';
+
+  function App() {
+    const [backendStatus, setBackendStatus] = useState('Checking...');
+
+    useEffect(() => {
+      fetch(`${import.meta.env.VITE_API_URL}/api/health`)
+        .then(res => res.json())
+        .then(data => setBackendStatus(`✓ Connected - ${data.status}`))
+        .catch(() => setBackendStatus('✗ Cannot connect to backend'));
+    }, []);
+
+    return (
+      <div style={{ textAlign: 'center', marginTop: '50px' }}>
+        <h1>Gubs Card Game</h1>
+        <p>Frontend is running!</p>
+        <p>Backend Status: {backendStatus}</p>
+      </div>
+    );
+  }
+
+  export default App;
+  ```
+  - Refresh the page - you should see "✓ Connected - OK" if backend is running
+
+**Troubleshooting:**
+- If port 5173 is busy, Vite will use the next available port (check terminal output)
+- If you get CORS errors, make sure backend has CORS enabled (already configured in step 0.1)
+- If "Cannot connect to backend", verify backend is running on port 5000
 
 #### 0.3 Version Control
 - [ ] Initialize git in project root: `git init`
