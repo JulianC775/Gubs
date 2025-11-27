@@ -1,0 +1,292 @@
+{
+  "cards": [
+    {
+      "id": "gub",
+      "name": "Gub",
+      "type": "Gub",
+      "subtype": null,
+      "description": "A basic Gub. Counts towards your score if free or protected.",
+      "quantity": 13,
+      "imageUrl": "/assets/cards/gub.png"
+    },
+    {
+      "id": "esteemed-elder",
+      "name": "Esteemed Elder",
+      "type": "Gub",
+      "subtype": "Elder",
+      "description": "Immune to all cards except Lightning. Counts towards your score and breaks a Tie.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/esteemed-elder.png"
+    },
+    {
+      "id": "mushroom",
+      "name": "Mushroom",
+      "type": "Barricade",
+      "subtype": null,
+      "description": "Protect one of your Gubs from attacks. Play on top of an unprotected Gub.",
+      "quantity": 7,
+      "imageUrl": "/assets/cards/mushroom.png"
+    },
+    {
+      "id": "toad-rider",
+      "name": "Toad Rider",
+      "type": "Barricade",
+      "subtype": null,
+      "description": "Protect one of your Gubs from attacks. Play on top of an unprotected Gub.",
+      "quantity": 4,
+      "imageUrl": "/assets/cards/toad-rider.png"
+    },
+    {
+      "id": "velvet-moth",
+      "name": "Velvet Moth",
+      "type": "Barricade",
+      "subtype": null,
+      "description": "Protect one of your Gubs from attacks. Play on top of an unprotected Gub.",
+      "quantity": 2,
+      "imageUrl": "/assets/cards/velvet-moth.png"
+    },
+    {
+      "id": "spear",
+      "name": "Spear",
+      "type": "Tool",
+      "subtype": "Weapon",
+      "description": "Destroy an opponent's Barricade OR trap an opponent's unprotected Gub.",
+      "quantity": 4,
+      "imageUrl": "/assets/cards/spear.png"
+    },
+    {
+      "id": "lure",
+      "name": "Lure",
+      "type": "Tool",
+      "subtype": "Weapon",
+      "description": "Destroy an opponent's Barricade.",
+      "quantity": 7,
+      "imageUrl": "/assets/cards/lure.png"
+    },
+    {
+      "id": "super-lure",
+      "name": "Super Lure",
+      "type": "Tool",
+      "subtype": "Weapon",
+      "description": "Destroy an opponent's Barricade. More powerful version of Lure.",
+      "quantity": 2,
+      "imageUrl": "/assets/cards/super-lure.png"
+    },
+    {
+      "id": "sud-spout",
+      "name": "Sud Spout",
+      "type": "Trap",
+      "subtype": null,
+      "description": "Trap an opponent's unprotected Gub. The Gub no longer counts towards their score.",
+      "quantity": 4,
+      "imageUrl": "/assets/cards/sud-spout.png"
+    },
+    {
+      "id": "lightning",
+      "name": "Lightning",
+      "type": "Hazard",
+      "subtype": "Storm",
+      "description": "The only card that can destroy an Esteemed Elder. Discards the Elder to the discard pile.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/lightning.png"
+    },
+    {
+      "id": "cyclone",
+      "name": "Cyclone",
+      "type": "Hazard",
+      "subtype": "Storm",
+      "description": "Powerful hazard card that affects the game state.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/cyclone.png"
+    },
+    {
+      "id": "smahl-thief",
+      "name": "Smahl Thief",
+      "type": "Tool",
+      "subtype": "Thief",
+      "description": "Steal an opponent's unprotected, non-Elder Gub and add it to your play area. If stealing from under a Sud Spout, discard the Sud Spout.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/smahl-thief.png"
+    },
+    {
+      "id": "age-old-cure",
+      "name": "Age Old Cure",
+      "type": "Tool",
+      "subtype": "Healing",
+      "description": "Rescue any card from the discard pile and add it to your hand. Can be played as an Interrupt to prevent Gargok Plague.",
+      "quantity": 2,
+      "imageUrl": "/assets/cards/age-old-cure.png"
+    },
+    {
+      "id": "retreat",
+      "name": "Retreat",
+      "type": "Tool",
+      "subtype": "Tactical",
+      "description": "Retrieve all your cards from your play area (Gubs, Barricades, Traps) and return them to your hand.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/retreat.png"
+    },
+    {
+      "id": "single-ring",
+      "name": "Single Ring",
+      "type": "Tool",
+      "subtype": "Magic",
+      "description": "When an opponent's Gub is freed, transfer it to your play area instead.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/single-ring.png"
+    },
+    {
+      "id": "double-ring",
+      "name": "Double Ring",
+      "type": "Tool",
+      "subtype": "Magic",
+      "description": "When opponent's Gubs are freed, transfer them to your play area instead. Works on two Gubs.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/double-ring.png"
+    },
+    {
+      "id": "triple-ring",
+      "name": "Triple Ring",
+      "type": "Tool",
+      "subtype": "Magic",
+      "description": "When opponent's Gubs are freed, transfer them to your play area instead. Works on three Gubs.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/triple-ring.png"
+    },
+    {
+      "id": "scout",
+      "name": "Scout",
+      "type": "Tool",
+      "subtype": "Tactical",
+      "description": "Scout ahead to gain information or advantage.",
+      "quantity": 2,
+      "imageUrl": "/assets/cards/scout.png"
+    },
+    {
+      "id": "haki-flute",
+      "name": "Haki Flute",
+      "type": "Tool",
+      "subtype": "Magic",
+      "description": "Magical flute with special abilities.",
+      "quantity": 2,
+      "imageUrl": "/assets/cards/haki-flute.png"
+    },
+    {
+      "id": "blindfold",
+      "name": "Blindfold",
+      "type": "Tool",
+      "subtype": "Tactical",
+      "description": "Affects visibility or targeting in gameplay.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/blindfold.png"
+    },
+    {
+      "id": "feather",
+      "name": "Feather",
+      "type": "Tool",
+      "subtype": "Magic",
+      "description": "Lightweight magical item with special properties.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/feather.png"
+    },
+    {
+      "id": "dangerous-alchemy",
+      "name": "Dangerous Alchemy",
+      "type": "Tool",
+      "subtype": "Magic",
+      "description": "Powerful alchemical effect with risk and reward.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/dangerous-alchemy.png"
+    },
+    {
+      "id": "omen-beetle",
+      "name": "Omen Beetle",
+      "type": "Tool",
+      "subtype": "Magic",
+      "description": "Mystical beetle that provides omens or special effects.",
+      "quantity": 2,
+      "imageUrl": "/assets/cards/omen-beetle.png"
+    },
+    {
+      "id": "cricket-song",
+      "name": "Cricket Song",
+      "type": "Interrupt",
+      "subtype": "Wild",
+      "description": "Wild card. Can be played as any other card type. Choose what card it represents when you play it.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/cricket-song.png"
+    },
+    {
+      "id": "flop-boat",
+      "name": "Flop Boat",
+      "type": "Interrupt",
+      "subtype": "Redirect",
+      "description": "Redirect an Event card back into the deck instead of resolving it. Can be played immediately when an Event is drawn.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/flop-boat.png"
+    },
+    {
+      "id": "traveling-merchant",
+      "name": "Traveling Merchant",
+      "type": "Event",
+      "subtype": "Event",
+      "description": "EVENT: When drawn, the Traveling Merchant visits with special effects.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/traveling-merchant.png"
+    },
+    {
+      "id": "gargok-plague",
+      "name": "Gargok Plague",
+      "type": "Event",
+      "subtype": "Curse",
+      "description": "EVENT: When drawn, all other players must shuffle their hands back into the deck and redraw the same number of cards. Can be prevented by Age Old Cure.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/gargok-plague.png"
+    },
+    {
+      "id": "flash-flood",
+      "name": "Flash Flood",
+      "type": "Event",
+      "subtype": "Disaster",
+      "description": "EVENT: When drawn, all players must discard all their unprotected Gubs to the discard pile.",
+      "quantity": 2,
+      "imageUrl": "/assets/cards/flash-flood.png"
+    },
+    {
+      "id": "rumor-of-wasps",
+      "name": "Rumor of Wasps",
+      "type": "Event",
+      "subtype": "Event",
+      "description": "EVENT: When drawn, rumors of wasps cause special effects in the game.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/rumor-of-wasps.png"
+    },
+    {
+      "id": "letter-g",
+      "name": "G",
+      "type": "Event",
+      "subtype": "Letter",
+      "description": "EVENT: First letter of GUBS. When the third letter is drawn, the game ends immediately.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/letter-g.png"
+    },
+    {
+      "id": "letter-u",
+      "name": "U",
+      "type": "Event",
+      "subtype": "Letter",
+      "description": "EVENT: Second letter of GUBS. When the third letter is drawn, the game ends immediately.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/letter-u.png"
+    },
+    {
+      "id": "letter-b",
+      "name": "B",
+      "type": "Event",
+      "subtype": "Letter",
+      "description": "EVENT: Third letter of GUBS. When the third letter is drawn, the game ends immediately.",
+      "quantity": 1,
+      "imageUrl": "/assets/cards/letter-b.png"
+    }
+  ]
+}
