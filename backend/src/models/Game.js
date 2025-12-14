@@ -16,6 +16,8 @@ class Game {
     this.createdAt = new Date();
     this.startedAt = null;
     this.endedAt = null;
+    this.maxPlayers = 6;
+    this.minPlayers = 2;
   }
 
   /**
@@ -23,7 +25,7 @@ class Game {
    * @returns {string}
    */
   generateRoomCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude similar looking chars
     let code = '';
     for (let i = 0; i < 4; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -42,8 +44,17 @@ class Game {
       throw new Error('Cannot add player - game has already started');
     }
 
-    if (this.players.length >= 6) {
-      throw new Error('Game is full (max 6 players)');
+    if (this.players.length >= this.maxPlayers) {
+      throw new Error(`Game is full (max ${this.maxPlayers} players)`);
+    }
+
+    if (!playerName || playerName.trim().length === 0) {
+      throw new Error('Player name is required');
+    }
+
+    // Check for duplicate names
+    if (this.players.some(p => p.name === playerName)) {
+      throw new Error('Player name already taken');
     }
 
     const player = new Player(playerName, socketId);
@@ -71,6 +82,11 @@ class Game {
       this.currentPlayerIndex = 0;
     }
 
+    // If game is active and not enough players left, end the game
+    if (this.status === 'active' && this.players.length < this.minPlayers) {
+      this.endGame();
+    }
+
     return true;
   }
 
@@ -86,8 +102,8 @@ class Game {
       throw new Error('Game has already started');
     }
 
-    if (this.players.length < 2) {
-      throw new Error('Need at least 2 players to start');
+    if (this.players.length < this.minPlayers) {
+      throw new Error(`Need at least ${this.minPlayers} players to start`);
     }
 
     // Initialize and shuffle deck
@@ -138,9 +154,12 @@ class Game {
 
   /**
    * Get the current player
-   * @returns {Player}
+   * @returns {Player|null}
    */
   getCurrentPlayer() {
+    if (this.players.length === 0) {
+      return null;
+    }
     return this.players[this.currentPlayerIndex];
   }
 
@@ -157,6 +176,10 @@ class Game {
    * Move to the next player's turn
    */
   nextTurn() {
+    if (this.status !== 'active') {
+      throw new Error('Game is not active');
+    }
+
     // Clear current player's turn flag
     this.players[this.currentPlayerIndex].isCurrentTurn = false;
 
@@ -267,6 +290,10 @@ class Game {
    * End the game and determine winner
    */
   endGame() {
+    if (this.status === 'ended') {
+      return;
+    }
+
     this.status = 'ended';
     this.endedAt = new Date();
     this.winner = this.determineWinner();
@@ -277,6 +304,10 @@ class Game {
    * @returns {Object} - { winner: Player, tiebreaker: string, scores: [] }
    */
   determineWinner() {
+    if (this.players.length === 0) {
+      return null;
+    }
+
     // Calculate scores for all players
     const playerScores = this.players.map(player => ({
       player,
@@ -330,6 +361,40 @@ class Game {
   }
 
   /**
+   * Get the current game state (summary for all players)
+   * @returns {Object} - Game state summary
+   */
+  getGameState() {
+    return {
+      id: this.id,
+      roomCode: this.roomCode,
+      status: this.status,
+      turnNumber: this.turnNumber,
+      currentPlayerIndex: this.currentPlayerIndex,
+      currentPlayer: this.getCurrentPlayer()?.name || null,
+      players: this.players.map(p => ({
+        id: p.id,
+        name: p.name,
+        score: p.calculateScore(),
+        handCount: p.hand.length,
+        isCurrentTurn: p.isCurrentTurn,
+        isReady: p.isReady
+      })),
+      deck: this.deck ? this.deck.toJSON() : null,
+      drawnLetters: this.drawnLetters,
+      winner: this.winner ? {
+        name: this.winner.winner.name,
+        score: this.winner.winner.calculateScore(),
+        tiebreaker: this.winner.tiebreaker
+      } : null,
+      maxPlayers: this.maxPlayers,
+      createdAt: this.createdAt,
+      startedAt: this.startedAt,
+      endedAt: this.endedAt
+    };
+  }
+
+  /**
    * Serialize game state to JSON
    * @param {string} requestingPlayerId - ID of player requesting (for privacy)
    * @returns {Object}
@@ -352,10 +417,24 @@ class Game {
         score: this.winner.winner.calculateScore(),
         tiebreaker: this.winner.tiebreaker
       } : null,
+      maxPlayers: this.maxPlayers,
       createdAt: this.createdAt,
       startedAt: this.startedAt,
       endedAt: this.endedAt
     };
+  }
+
+  /**
+   * Get game duration in milliseconds
+   * @returns {number}
+   */
+  getDuration() {
+    if (!this.startedAt) {
+      return 0;
+    }
+
+    const endTime = this.endedAt || new Date();
+    return endTime - this.startedAt;
   }
 }
 
