@@ -240,12 +240,12 @@ Build the game logic without any database or frontend - pure JavaScript logic.
 - [ ] Function: `executeCardEffect(game, card, playerId, target)` - apply card effects
 - [ ] Card effect handlers:
   - [ ] `playGub()`
-  - [ ] `playBarricade()`
-  - [ ] `playSpear()` - destroy barricade or trap Gub
+  - [ ] `playBarricade()` - protect a gub
+  - [ ] `playSpear()` - destroy barricade or trap Gub or kill a gub
   - [ ] `playSmallThief()` - steal Gub
-  - [ ] `playLightning()` - can destroy Esteemed Elder
-  - [ ] `playAgeOldCure()` - rescue from discard
-  - [ ] `playRetreat()` - retrieve all cards
+  - [ ] `playLightning()` - can destroy Esteemed Elder or a players hand
+  - [ ] `playAgeOldCure()` - rescue a gub from discard pile
+  - [ ] `playRetreat()` - retrieve all cards in play to your hand
   - [ ] Event card handlers
 - [ ] Test: Each card type individually
 
