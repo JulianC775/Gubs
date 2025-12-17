@@ -181,73 +181,73 @@ Get both frontend and backend projects initialized and running locally.
 
 ---
 
-## Phase 1: Core Game Engine (Backend) (Weeks 2-3)
+## Phase 1: Core Game Engine (Backend) (Weeks 2-3) ✅
 
 ### Goal
 Build the game logic without any database or frontend - pure JavaScript logic.
 
 ### Step-by-Step Tasks
 
-#### 1.1 Card Model (`src/models/Card.js`)
-- [ ] Create Card class with properties:
+#### 1.1 Card Model (`src/models/Card.js`) ✅
+- [x] Create Card class with properties:
   - `id`, `name`, `type`, `subtype`, `description`, `imageUrl`
-- [ ] Add special properties: `isProtected`, `isTrapped`, `protectionCards`, `trapCard`
-- [ ] Create method: `toJSON()` for serialization
-- [ ] Test: Create a few card instances in a test file
+- [x] Add special properties: `isProtected`, `isTrapped`, `protectionCards`, `trapCard`
+- [x] Create method: `toJSON()` for serialization
+- [x] Test: Create a few card instances in a test file
 
-#### 1.2 Card Data (`src/data/cards.json`)
-- [ ] Create JSON file with all 70 cards from the game
-- [ ] Categories: Gubs (8+), Barricades (mushroom, toad rider), Traps, Tools, Hazards, Interrupts, Events
-- [ ] Include: Letter cards (G, U, B), Flash Flood, etc.
-- [ ] Each card needs: `id`, `name`, `type`, `subtype`, `description`, `quantity`
+#### 1.2 Card Data (`src/data/cards.json`) ✅
+- [x] Create JSON file with all 72 cards from the game
+- [x] Categories: Gubs (14), Barricades (mushroom, toad rider, velvet moth), Traps, Tools, Hazards, Interrupts, Events
+- [x] Include: Letter cards (G, U, B), Flash Flood, etc.
+- [x] Each card needs: `id`, `name`, `type`, `subtype`, `description`, `quantity`
 
-#### 1.3 Deck Model (`src/models/Deck.js`)
-- [ ] Create Deck class
-- [ ] Method: `constructor()` - loads all cards from cards.json
-- [ ] Method: `shuffle()` - Fisher-Yates shuffle algorithm
-- [ ] Method: `insertLetterCards()` - place G, U, B at top/middle/bottom thirds
-- [ ] Method: `drawCard()` - remove and return top card
-- [ ] Method: `addToDiscard(card)` - add card to discard pile
-- [ ] Property: `drawnLetters` - track which letters have been drawn
-- [ ] Test: Create deck, shuffle, draw cards, verify letter placement
+#### 1.3 Deck Model (`src/models/Deck.js`) ✅
+- [x] Create Deck class
+- [x] Method: `constructor()` - loads all cards from cards.json
+- [x] Method: `shuffle()` - Fisher-Yates shuffle algorithm
+- [x] Method: `insertLetterCards()` - place G, U, B at top/middle/bottom thirds
+- [x] Method: `drawCard()` - remove and return top card
+- [x] Method: `addToDiscard(card)` - add card to discard pile
+- [x] Property: `drawnLetters` - track which letters have been drawn
+- [x] Test: Create deck, shuffle, draw cards, verify letter placement
 
-#### 1.4 Player Model (`src/models/Player.js`)
-- [ ] Create Player class
-- [ ] Properties: `id`, `name`, `hand`, `playArea`, `isCurrentTurn`, `consecutiveSkips`
-- [ ] Method: `addCardToHand(card)`
-- [ ] Method: `removeCardFromHand(cardId)` - returns card or null
-- [ ] Method: `playGub(card)` - add to playArea.gubs
-- [ ] Method: `playBarricade(card, targetGubId)` - protect a Gub
-- [ ] Method: `calculateScore()` - count free + protected Gubs
-- [ ] Method: `hasCard(cardId)` - check if card in hand
-- [ ] Test: Create player, add cards, play cards, calculate score
+#### 1.4 Player Model (`src/models/Player.js`) ✅
+- [x] Create Player class
+- [x] Properties: `id`, `name`, `hand`, `playArea`, `isCurrentTurn`, `consecutiveSkips`
+- [x] Method: `addCardToHand(card)`
+- [x] Method: `removeCardFromHand(cardId)` - returns card or null
+- [x] Method: `playGub(card)` - add to playArea.gubs
+- [x] Method: `playBarricade(card, targetGubId)` - protect a Gub
+- [x] Method: `calculateScore()` - count free + protected Gubs
+- [x] Method: `hasCard(cardId)` - check if card in hand
+- [x] Test: Create player, add cards, play cards, calculate score
 
-#### 1.5 Game Model (`src/models/Game.js`)
-- [ ] Create Game class
-- [ ] Properties: `id`, `roomCode`, `players`, `deck`, `status`, `currentPlayerIndex`, `turnNumber`, `drawnLetters`
-- [ ] Method: `addPlayer(playerName)` - add player, deal starting Gub
-- [ ] Method: `startGame()` - deal 3 cards to each player, shuffle deck, insert letters
-- [ ] Method: `getCurrentPlayer()` - return current player object
-- [ ] Method: `nextTurn()` - increment currentPlayerIndex (wrap around)
-- [ ] Method: `playerDrawCard(playerId)` - validate, draw, handle events
-- [ ] Method: `playerPlayCard(playerId, cardId, targetPlayerId, targetCardId)` - validate and execute
-- [ ] Method: `isGameOver()` - check if all 3 letters drawn
-- [ ] Method: `determineWinner()` - calculate scores, apply tiebreakers
-- [ ] Test: Full game simulation with 2 dummy players
+#### 1.5 Game Model (`src/models/Game.js`) ✅
+- [x] Create Game class
+- [x] Properties: `id`, `roomCode`, `players`, `deck`, `status`, `currentPlayerIndex`, `turnNumber`, `drawnLetters`
+- [x] Method: `addPlayer(playerName)` - add player, deal starting Gub
+- [x] Method: `startGame()` - deal 3 cards to each player, shuffle deck, insert letters
+- [x] Method: `getCurrentPlayer()` - return current player object
+- [x] Method: `nextTurn()` - increment currentPlayerIndex (wrap around)
+- [x] Method: `playerDrawCard(playerId)` - validate, draw, handle events
+- [x] Method: `playerPlayCard(playerId, cardId, targetPlayerId, targetCardId)` - validate and execute
+- [x] Method: `isGameOver()` - check if all 3 letters drawn
+- [x] Method: `determineWinner()` - calculate scores, apply tiebreakers
+- [x] Test: Full game simulation with 2 dummy players
 
-#### 1.6 Game Logic Service (`src/services/gameEngine.js`)
-- [ ] Function: `validateCardPlay(game, playerId, cardId, target)` - check if valid
-- [ ] Function: `executeCardEffect(game, card, playerId, target)` - apply card effects
-- [ ] Card effect handlers:
-  - [ ] `playGub()`
-  - [ ] `playBarricade()` - protect a gub
-  - [ ] `playSpear()` - destroy barricade or trap Gub or kill a gub
-  - [ ] `playSmallThief()` - steal Gub
-  - [ ] `playLightning()` - can destroy Esteemed Elder or a players hand
-  - [ ] `playAgeOldCure()` - rescue a gub from discard pile
-  - [ ] `playRetreat()` - retrieve all cards in play to your hand
-  - [ ] Event card handlers
-- [ ] Test: Each card type individually
+#### 1.6 Game Logic Service (`src/services/gameEngine.js`) ✅
+- [x] Function: `validateCardPlay(game, playerId, cardId, target)` - check if valid
+- [x] Function: `executeCardEffect(game, card, playerId, target)` - apply card effects
+- [x] Card effect handlers:
+  - [x] `playGub()`
+  - [x] `playBarricade()` - protect a gub
+  - [x] `playSpear()` - destroy barricade or trap Gub or kill a gub
+  - [x] `playSmallThief()` - steal Gub
+  - [x] `playLightning()` - can destroy Esteemed Elder or a players hand
+  - [x] `playAgeOldCure()` - rescue a gub from discard pile
+  - [x] `playRetreat()` - retrieve all cards in play to your hand
+  - [x] Event card handlers
+- [x] Test: Each card type individually
 
 #### 1.7 Testing Game Engine
 - [ ] Create `tests/gameEngine.test.js`
