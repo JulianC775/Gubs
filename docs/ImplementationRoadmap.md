@@ -250,13 +250,13 @@ Build the game logic without any database or frontend - pure JavaScript logic.
 - [x] Test: Each card type individually
 
 #### 1.7 Testing Game Engine
-- [ ] Create `tests/gameEngine.test.js`
-- [ ] Test: Create game, add players, start game
-- [ ] Test: Draw cards, verify events trigger
-- [ ] Test: Play Gubs, verify they enter play
-- [ ] Test: Play Barricade, verify protection
-- [ ] Test: Play Spear, verify destruction
-- [ ] Test: Game end when 3rd letter drawn
+- [x] Create `tests/gameEngine.test.js`
+- [x] Test: Create game, add players, start game
+- [x] Test: Draw cards, verify events trigger
+- [x] Test: Play Gubs, verify they enter play
+- [x] Test: Play Barricade, verify protection
+- [x] Test: Play Spear, verify destruction
+- [x] Test: Game end when 3rd letter drawn
 - [ ] Test: Winner determination with tiebreakers
 - [ ] Fix any bugs found
 
