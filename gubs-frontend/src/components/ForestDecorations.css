@@ -1,0 +1,183 @@
+.forest-decorations {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Corner vines */
+.vine {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  opacity: 0.8;
+}
+
+.vine-top-left {
+  top: 0;
+  left: 0;
+  animation: sway 6s ease-in-out infinite;
+}
+
+.vine-top-right {
+  top: 0;
+  right: 0;
+  animation: sway 7s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.vine svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Mushrooms at bottom corners */
+.mushroom {
+  position: absolute;
+  bottom: 5%;
+  width: 60px;
+  height: 80px;
+  opacity: 0.7;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.mushroom-left {
+  left: 3%;
+  animation: sway 5s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+.mushroom-right {
+  right: 3%;
+  animation: sway 5.5s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.mushroom svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Fireflies with glow pulse */
+.firefly {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  filter: blur(1px);
+  animation: firefly-glow 2s ease-in-out infinite;
+}
+
+.firefly-1 {
+  top: 25%;
+  left: 15%;
+  animation-delay: 0s;
+  animation-duration: 2.2s;
+}
+
+.firefly-2 {
+  top: 45%;
+  right: 20%;
+  animation-delay: -0.8s;
+  animation-duration: 2.5s;
+}
+
+.firefly-3 {
+  top: 60%;
+  left: 25%;
+  animation-delay: -1.5s;
+  animation-duration: 2.1s;
+}
+
+.firefly-4 {
+  top: 35%;
+  right: 12%;
+  animation-delay: -0.3s;
+  animation-duration: 2.4s;
+}
+
+.firefly-5 {
+  top: 70%;
+  left: 80%;
+  animation-delay: -1.2s;
+  animation-duration: 2.3s;
+}
+
+.firefly svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ferns framing the content */
+.fern {
+  position: absolute;
+  width: 100px;
+  height: 200px;
+  opacity: 0.6;
+}
+
+.fern-left {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: sway-strong 8s ease-in-out infinite;
+}
+
+.fern-right {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleX(-1);
+  animation: sway-strong 8.5s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.fern svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Responsive - hide or scale down decorations on mobile */
+@media (max-width: 768px) {
+  .vine {
+    width: 120px;
+    height: 120px;
+  }
+
+  .mushroom {
+    width: 40px;
+    height: 53px;
+  }
+
+  .fern {
+    width: 60px;
+    height: 120px;
+  }
+
+  .firefly {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vine,
+  .fern {
+    opacity: 0.4;
+  }
+
+  .mushroom {
+    display: none;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .vine,
+  .mushroom,
+  .fern,
+  .firefly {
+    animation: none;
+  }
+}

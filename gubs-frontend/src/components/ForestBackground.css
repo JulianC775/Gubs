@@ -1,0 +1,141 @@
+.forest-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Forest layers with depth */
+.forest-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 80%;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+}
+
+/* Far layer - most blurred and faint */
+.forest-layer-far {
+  filter: blur(8px);
+  opacity: 0.6;
+  color: var(--forest-primary-dark);
+}
+
+.forest-layer-far .tree-silhouette {
+  position: absolute;
+  bottom: 0;
+  width: 15%;
+  height: 60%;
+}
+
+/* Mid layer - moderate blur */
+.forest-layer-mid {
+  filter: blur(4px);
+  opacity: 0.7;
+  color: var(--forest-primary);
+}
+
+.forest-layer-mid .tree-silhouette {
+  position: absolute;
+  bottom: 0;
+  width: 12%;
+  height: 50%;
+}
+
+/* Near layer - foreground foliage with blur for depth of field */
+.forest-layer-near {
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.foliage-blur {
+  position: absolute;
+  width: 25%;
+  height: 60%;
+  filter: blur(6px);
+  opacity: 0.5;
+}
+
+.foliage-left {
+  left: -5%;
+  top: 0;
+}
+
+.foliage-right {
+  right: -5%;
+  top: 0;
+}
+
+.foliage-blur svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Fog/mist layers */
+.forest-fog {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.fog-layer {
+  position: absolute;
+  width: 150%;
+  height: 40%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 70%
+  );
+  animation: fog-drift 25s ease-in-out infinite;
+}
+
+.fog-1 {
+  top: 20%;
+  left: -25%;
+  animation-delay: 0s;
+  animation-duration: 30s;
+}
+
+.fog-2 {
+  top: 40%;
+  left: -10%;
+  animation-delay: -10s;
+  animation-duration: 35s;
+}
+
+.fog-3 {
+  top: 60%;
+  left: -20%;
+  animation-delay: -20s;
+  animation-duration: 28s;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .forest-layer {
+    height: 60%;
+  }
+
+  .forest-layer-far .tree-silhouette {
+    width: 20%;
+  }
+
+  .forest-layer-mid .tree-silhouette {
+    width: 18%;
+  }
+
+  .foliage-blur {
+    width: 30%;
+  }
+}
