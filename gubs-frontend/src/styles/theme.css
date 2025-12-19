@@ -1,0 +1,54 @@
+:root {
+  /* Primary colors */
+  --forest-primary: #2d5f5d;
+  --forest-primary-light: #3a7876;
+  --forest-primary-dark: #1f4442;
+
+  /* Accent colors */
+  --moss: #7a9b76;
+  --moss-light: #95b391;
+  --teal: #4a9b9b;
+  --teal-light: #6bb5b5;
+  --sage: #8ba888;
+
+  /* Purples */
+  --mystical: #7d6b94;
+  --mystical-light: #9b8ab3;
+  --mystical-dark: #5f4e73;
+
+  /* Neutrals */
+  --cream: #f5f3ed;
+  --warm-white: #faf9f5;
+  --stone: #e8e6dd;
+  --slate: #4a5759;
+  --charcoal: #2c3537;
+
+  /* Feedback colors */
+  --success: #6b9b76;
+  --warning: #c9a86a;
+  --error: #b07272;
+  --info: #6bb5b5;
+
+  /* Backgrounds */
+  --bg-primary: var(--warm-white);
+  --bg-secondary: var(--cream);
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-overlay: rgba(45, 95, 93, 0.15);
+
+  /* Text */
+  --text-primary: var(--charcoal);
+  --text-secondary: var(--slate);
+  --text-muted: #6b7678;
+  --text-on-dark: var(--cream);
+
+  /* Borders */
+  --border-light: rgba(45, 95, 93, 0.1);
+  --border-medium: rgba(45, 95, 93, 0.2);
+  --border-strong: var(--forest-primary);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(45, 95, 93, 0.08);
+  --shadow-md: 0 4px 16px rgba(45, 95, 93, 0.12);
+  --shadow-lg: 0 8px 24px rgba(45, 95, 93, 0.16);
+  --glow: 0 0 20px rgba(74, 155, 155, 0.3);
+}
