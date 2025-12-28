@@ -40,24 +40,42 @@ class Game {
    * @returns {Player} - The created player
    */
   addPlayer(playerName, socketId = null) {
-    if (this.status !== 'lobby') {
-      throw new Error('Cannot add player - game has already started');
-    }
-
-    if (this.players.length >= this.maxPlayers) {
-      throw new Error(`Game is full (max ${this.maxPlayers} players)`);
-    }
-
+    // Validate player name
     if (!playerName || playerName.trim().length === 0) {
       throw new Error('Player name is required');
     }
 
-    // Check for duplicate names
-    if (this.players.some(p => p.name === playerName)) {
-      throw new Error('Player name already taken');
+    // Trim and normalize name
+    const trimmedName = playerName.trim();
+
+    // Check if player with this name already exists
+    const existingPlayer = this.players.find(p => p.name === trimmedName);
+
+    if (existingPlayer) {
+      // If player is disconnected, allow reconnection
+      if (!existingPlayer.isConnected) {
+        existingPlayer.socketId = socketId;
+        existingPlayer.isConnected = true;
+        console.log(`Player ${trimmedName} reconnected to game ${this.id}`);
+        return existingPlayer;
+      } else {
+        // Player is already connected - this is a true duplicate
+        throw new Error('Player name already taken');
+      }
     }
 
-    const player = new Player(playerName, socketId);
+    // Check max players (only for NEW players)
+    if (this.players.length >= this.maxPlayers) {
+      throw new Error(`Game is full (max ${this.maxPlayers} players)`);
+    }
+
+    // Check game status (only for NEW players)
+    if (this.status !== 'lobby') {
+      throw new Error('Cannot add player - game has already started');
+    }
+
+    // Create new player
+    const player = new Player(trimmedName, socketId);
     this.players.push(player);
 
     return player;

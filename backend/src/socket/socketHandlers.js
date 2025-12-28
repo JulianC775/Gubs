@@ -209,14 +209,27 @@ function initializeSocketHandlers(io) {
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
 
-      if (socket.data?.roomCode) {
+      if (socket.data?.roomCode && socket.data?.gameId && socket.data?.playerId) {
         const { gameId, playerId, roomCode } = socket.data;
+        const game = games.get(gameId);
 
-        // Notify room that player disconnected
-        io.to(roomCode).emit('player:disconnected', {
-          playerId,
-          message: 'Player disconnected'
-        });
+        if (game) {
+          const player = game.players.find(p => p.id === playerId);
+          if (player) {
+            // Mark player as disconnected instead of removing them
+            player.isConnected = false;
+            player.socketId = null;
+
+            console.log(`Player ${player.name} disconnected from game ${gameId}`);
+
+            // Notify room that player disconnected
+            io.to(roomCode).emit('player:disconnected', {
+              playerId,
+              playerName: player.name,
+              game: game.toJSON()
+            });
+          }
+        }
       }
     });
   });

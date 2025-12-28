@@ -5,6 +5,7 @@ class Player {
     this.id = uuidv4();
     this.name = name;
     this.socketId = socketId;
+    this.isConnected = socketId ? true : false; // Track connection status
     this.hand = [];
     this.playArea = {
       gubs: [],           // Free Gubs (count towards score)
@@ -280,6 +281,7 @@ class Player {
     return {
       id: this.id,
       name: this.name,
+      isConnected: this.isConnected,
       hand: shouldShowHand ? this.hand.map(card => card.toJSON()) : null,
       handCount: this.hand.length,
       playArea: {

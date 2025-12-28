@@ -18,7 +18,9 @@ function PlayerList({ players, hostId, currentPlayerId }) {
               </span>
             </div>
             <div className="player-status">
-              {player.isReady ? (
+              {!player.isConnected ? (
+                <span className="disconnected-indicator">⚠️ Disconnected</span>
+              ) : player.isReady ? (
                 <span className="ready-indicator">✓ Ready</span>
               ) : (
                 <span className="not-ready-indicator">Not Ready</span>
