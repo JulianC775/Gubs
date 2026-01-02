@@ -205,6 +205,166 @@ function initializeSocketHandlers(io) {
       }
     });
 
+    // Draw card
+    socket.on('game:drawCard', ({ gameId, playerId }) => {
+      try {
+        const game = games.get(gameId);
+        if (!game) {
+          socket.emit('error', { message: 'Game not found' });
+          return;
+        }
+
+        // Validate it's the player's turn
+        const currentPlayer = game.getCurrentPlayer();
+        if (!currentPlayer || currentPlayer.id !== playerId) {
+          socket.emit('error', { message: 'Not your turn' });
+          return;
+        }
+
+        // Draw the card
+        const result = game.playerDrawCard(playerId);
+
+        // Send the card to the player who drew it
+        socket.emit('card:drawn', {
+          card: result.card.toJSON(),
+          isEvent: result.isEvent,
+          isLetter: result.isLetter
+        });
+
+        // Broadcast to all players (without revealing the card unless it's an event/letter)
+        io.to(game.roomCode).emit('game:cardDrawn', {
+          playerId,
+          playerName: currentPlayer.name,
+          isEvent: result.isEvent,
+          isLetter: result.isLetter,
+          card: result.isEvent || result.isLetter ? result.card.toJSON() : null,
+          cardsRemaining: game.deck.getCardsRemaining()
+        });
+
+        // If letter was drawn, broadcast letter info
+        if (result.isLetter) {
+          io.to(game.roomCode).emit('letter:drawn', {
+            letter: result.card.name,
+            drawnLetters: game.drawnLetters
+          });
+        }
+
+        // If game ended, broadcast game over
+        if (result.gameEnded) {
+          io.to(game.roomCode).emit('game:ended', {
+            winner: game.winner,
+            finalScores: game.players.map(p => ({
+              playerId: p.id,
+              playerName: p.name,
+              score: p.calculateScore(),
+              gubs: p.playArea.gubs.length
+            }))
+          });
+        }
+
+        // Broadcast updated game state
+        io.to(game.roomCode).emit('gameState:update', game.toJSON());
+
+        console.log(`Player ${currentPlayer.name} drew a card`);
+      } catch (error) {
+        console.error('Error drawing card:', error);
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    // Play card
+    socket.on('game:playCard', ({ gameId, playerId, cardId, target }) => {
+      try {
+        const game = games.get(gameId);
+        if (!game) {
+          socket.emit('error', { message: 'Game not found' });
+          return;
+        }
+
+        const player = game.getPlayer(playerId);
+        if (!player) {
+          socket.emit('error', { message: 'Player not found' });
+          return;
+        }
+
+        // Play the card
+        const result = game.playerPlayCard(playerId, cardId, target);
+
+        // Broadcast card played to all players
+        io.to(game.roomCode).emit('card:played', {
+          playerId,
+          playerName: player.name,
+          card: result.card.toJSON(),
+          target
+        });
+
+        // Update each player's hand (only send their own hand)
+        game.players.forEach(p => {
+          const playerSocket = Array.from(io.sockets.sockets.values()).find(
+            s => s.data?.playerId === p.id
+          );
+          if (playerSocket) {
+            playerSocket.emit('hand:update', {
+              playerId: p.id,
+              hand: p.hand.map(card => card.toJSON())
+            });
+          }
+        });
+
+        // Broadcast updated game state
+        io.to(game.roomCode).emit('gameState:update', game.toJSON());
+
+        console.log(`Player ${player.name} played ${result.card.name}`);
+      } catch (error) {
+        console.error('Error playing card:', error);
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    // End turn
+    socket.on('game:endTurn', ({ gameId, playerId }) => {
+      try {
+        const game = games.get(gameId);
+        if (!game) {
+          socket.emit('error', { message: 'Game not found' });
+          return;
+        }
+
+        const currentPlayer = game.getCurrentPlayer();
+        if (!currentPlayer || currentPlayer.id !== playerId) {
+          socket.emit('error', { message: 'Not your turn' });
+          return;
+        }
+
+        // Check hand limit (max 8 cards)
+        if (currentPlayer.hand.length > 8) {
+          socket.emit('error', { message: 'You must discard down to 8 cards before ending your turn' });
+          return;
+        }
+
+        // Move to next turn
+        game.nextTurn();
+
+        const nextPlayer = game.getCurrentPlayer();
+
+        // Broadcast turn change
+        io.to(game.roomCode).emit('turn:changed', {
+          previousPlayerId: playerId,
+          currentPlayerId: nextPlayer.id,
+          currentPlayerName: nextPlayer.name,
+          turnNumber: game.turnNumber
+        });
+
+        // Broadcast updated game state
+        io.to(game.roomCode).emit('gameState:update', game.toJSON());
+
+        console.log(`Turn changed to ${nextPlayer.name}`);
+      } catch (error) {
+        console.error('Error ending turn:', error);
+        socket.emit('error', { message: error.message });
+      }
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
