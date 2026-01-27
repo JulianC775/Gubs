@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import { useGame } from '../contexts/GameContext';
@@ -19,23 +19,11 @@ function Lobby() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [joining, setJoining] = useState(false);
+  const hasJoined = useRef(false);
 
-  // Join game when component mounts
+  // Listen for game:joined and error events (separate from emit to survive strict mode cleanup)
   useEffect(() => {
-    if (!connected || !playerName) {
-      return;
-    }
-
-    if (gameId && playerId) {
-      // Already in game, just set loading to false
-      setLoading(false);
-      return;
-    }
-
-    // Join the game
-    setJoining(true);
-    console.log('Attempting to join room:', roomCode, 'as', playerName);
+    if (!connected) return;
 
     const handleGameJoined = (data) => {
       console.log('Game joined successfully:', data);
@@ -47,26 +35,61 @@ function Lobby() {
 
       dispatch({ type: 'GAME_STATE_UPDATE', payload: data.game });
       setLoading(false);
-      setJoining(false);
     };
 
     const handleError = (data) => {
-      console.error('Error joining game:', data);
+      console.error('Error from server:', data);
       setError(data.message || 'Failed to join game');
       setLoading(false);
-      setJoining(false);
+    };
+
+    const handlePlayerJoined = (data) => {
+      console.log('Player joined:', data);
+      dispatch({ type: 'GAME_STATE_UPDATE', payload: data.game });
+    };
+
+    const handlePlayerReady = (data) => {
+      console.log('Player ready status changed:', data);
+      dispatch({ type: 'GAME_STATE_UPDATE', payload: data.game });
     };
 
     on('game:joined', handleGameJoined);
     on('error', handleError);
-
-    emit('game:join', { roomCode, playerName });
+    on('player:joined', handlePlayerJoined);
+    on('player:ready', handlePlayerReady);
 
     return () => {
       off('game:joined', handleGameJoined);
       off('error', handleError);
+      off('player:joined', handlePlayerJoined);
+      off('player:ready', handlePlayerReady);
     };
-  }, [connected, playerName, roomCode, gameId, playerId]);
+  }, [connected, playerName, dispatch, setPlayer, on, off]);
+
+  // Join or register with room when component mounts
+  useEffect(() => {
+    if (!connected || !playerName) {
+      return;
+    }
+
+    // Prevent double-joining (React Strict Mode runs effects twice)
+    if (hasJoined.current) {
+      return;
+    }
+    hasJoined.current = true;
+
+    // If we already have playerId (host created game via REST), we just need to register socket
+    if (playerId && gameId) {
+      console.log('Host registering socket with room:', roomCode);
+      emit('game:join', { roomCode, playerName });
+      // Don't wait for response - we already have the game state
+      setLoading(false);
+    } else {
+      // Joining player - need to wait for game:joined response
+      console.log('Attempting to join room:', roomCode, 'as', playerName);
+      emit('game:join', { roomCode, playerName });
+    }
+  }, [connected, playerName, roomCode, playerId, gameId, emit]);
 
   // Listen for game start
   useEffect(() => {
@@ -81,6 +104,13 @@ function Lobby() {
       off('game:started', handleGameStarted);
     };
   }, [on, off, navigate]);
+
+  // Redirect to home if no player name
+  useEffect(() => {
+    if (!playerName) {
+      navigate('/');
+    }
+  }, [playerName, navigate]);
 
   const handleToggleReady = () => {
     if (!gameId || !playerId) return;
@@ -119,13 +149,12 @@ function Lobby() {
     );
   }
 
+  // If no player name, useEffect will redirect - just return null during redirect
   if (!playerName) {
-    // Redirect to home if no player name
-    navigate('/');
     return null;
   }
 
-  if (loading || joining) {
+  if (loading) {
     return (
       <>
         <ForestBackground />

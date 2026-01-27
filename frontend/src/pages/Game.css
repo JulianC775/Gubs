@@ -1,3 +1,239 @@
 .game-page {
-  /* TODO: Add styles */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Error toast */
+.error-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--error, #b07272);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  z-index: 100;
+  animation: slideDown 0.3s ease;
+  box-shadow: var(--shadow-lg);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Game header */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--bg-card, rgba(255, 255, 255, 0.7));
+  border-radius: 12px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.game-info {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.room-code {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  background: var(--stone);
+  border-radius: 6px;
+}
+
+.turn-info {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.current-turn-indicator {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.your-turn {
+  color: var(--success, #6b9b76);
+  padding: 6px 16px;
+  background: rgba(107, 155, 118, 0.2);
+  border-radius: 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.waiting {
+  color: var(--text-secondary);
+}
+
+/* Main game area */
+.game-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+/* Opponents section */
+.opponents-section {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.opponents-section .player-board {
+  flex: 1;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+/* Center section */
+.center-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--forest-primary, #2d5f5d);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--forest-primary-dark, #1f4442);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: var(--stone, #e8e6dd);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--border-medium);
+  transform: translateY(-2px);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.targeting-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(201, 168, 106, 0.2);
+  border: 2px solid var(--warning);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Your play area */
+.your-play-area {
+  margin-top: auto;
+}
+
+/* Your hand section */
+.your-hand-section {
+  padding: 16px;
+  background: var(--bg-card, rgba(255, 255, 255, 0.7));
+  border-radius: 16px 16px 0 0;
+  backdrop-filter: blur(8px);
+  margin: 0 -16px -16px -16px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .game-page {
+    padding: 8px;
+  }
+
+  .game-header {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .game-info {
+    gap: 12px;
+  }
+
+  .opponents-section {
+    gap: 8px;
+  }
+
+  .opponents-section .player-board {
+    min-width: 100%;
+  }
+
+  .center-section {
+    padding: 8px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .your-hand-section {
+    padding: 10px;
+    margin: 0 -8px -8px -8px;
+  }
 }

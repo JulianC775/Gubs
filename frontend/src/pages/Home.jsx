@@ -5,6 +5,7 @@ import ForestParticles from '../components/ForestParticles';
 import ForestDecorations from '../components/ForestDecorations';
 import { createGame } from '../services/gameService';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useGame } from '../contexts/GameContext';
 import '../App.css';
 
 function Home() {
@@ -16,6 +17,7 @@ function Home() {
 
   const navigate = useNavigate();
   const { setPlayer } = usePlayer();
+  const { dispatch: gameDispatch } = useGame();
 
   const handleCreateGame = async () => {
     if (!playerName.trim()) {
@@ -36,6 +38,9 @@ function Home() {
         playerName: playerName.trim(),
         isHost: true
       });
+
+      // Set game state so Lobby knows we already joined
+      gameDispatch({ type: 'GAME_STATE_UPDATE', payload: game });
 
       // Navigate to lobby
       navigate(`/lobby/${game.roomCode}`);

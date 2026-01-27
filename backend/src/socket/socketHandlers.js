@@ -32,8 +32,8 @@ function initializeSocketHandlers(io) {
           return;
         }
 
-        // Add player to game
-        const player = game.addPlayer(playerName);
+        // Add player to game (pass socket.id for reconnection tracking)
+        const player = game.addPlayer(playerName, socket.id);
 
         // Join socket room
         socket.join(roomCode);

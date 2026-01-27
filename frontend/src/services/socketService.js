@@ -4,8 +4,31 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 
 class SocketService {
   constructor() {
-    this.socket = null;
     this.connected = false;
+    // Create socket immediately so listeners can be registered
+    this.socket = io(SOCKET_URL, {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      transports: ['websocket', 'polling'],
+      autoConnect: false // Don't connect until connect() is called
+    });
+
+    // Set up connection handlers
+    this.socket.on('connect', () => {
+      console.log('Connected to server');
+      this.connected = true;
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      this.connected = false;
+    });
   }
 
   connect() {
@@ -13,37 +36,27 @@ class SocketService {
       return Promise.resolve();
     }
 
-    this.socket = io(SOCKET_URL, {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-      transports: ['websocket', 'polling']
-    });
-
     return new Promise((resolve, reject) => {
-      this.socket.on('connect', () => {
-        console.log('Connected to server');
-        this.connected = true;
+      const onConnect = () => {
+        this.socket.off('connect_error', onError);
         resolve();
-      });
+      };
 
-      this.socket.on('connect_error', (error) => {
-        console.error('Connection error:', error);
+      const onError = (error) => {
+        this.socket.off('connect', onConnect);
         reject(error);
-      });
+      };
 
-      this.socket.on('disconnect', () => {
-        console.log('Disconnected from server');
-        this.connected = false;
-      });
+      this.socket.once('connect', onConnect);
+      this.socket.once('connect_error', onError);
+
+      this.socket.connect();
     });
   }
 
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
-      this.socket = null;
       this.connected = false;
     }
   }
