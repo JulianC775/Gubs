@@ -332,7 +332,7 @@ Replace in-memory storage with MongoDB for persistence and Redis for active game
 
 #### 3.2 MongoDB Schema (`src/models/GameSchema.js`)
 - [ ] Create Mongoose schema for Game
-- [ ] Fields: gameId, roomCode, players, status, winner, finalScores, createdAt, endedAt
+- [ ] Fields: gameId, roomCode, players, status, winner, finalScores, createdA , endedAt
 - [ ] Create indexes on: roomCode, gameId
 - [ ] Export model
 
@@ -602,6 +602,15 @@ Make the game enjoyable to play with good UX.
 - [ ] Tools: Figma, Canva, or AI image generation
 - [ ] Store in `frontend/public/assets/cards/`
 - [ ] Update cards.json with imageUrl paths
+
+**NOTE**: This is a significant art task. We need unique images for all 70+ cards including:
+- 14 Gub characters (each unique)
+- Multiple Barricade types (Mushroom, Toad Rider, Velvet Moth)
+- Tool cards (Spear, Lightning, etc.)
+- Trap cards (Sud Spout, etc.)
+- Event cards (Flash Flood, Gargok Plague, etc.)
+- Letter cards (G, U, B)
+Consider using AI image generation tools or commissioning an artist.
 
 #### 7.2 Animations
 - [ ] Card draw animation (slide from deck to hand)
@@ -895,6 +904,7 @@ Deploy to production so others can play.
 - [ ] In-game currency and cosmetics
 - [ ] Voice chat integration
 - [ ] Twitch/YouTube integration for streaming
+- [ ] Drag and drop for cards (use @dnd-kit/core or react-dnd)
 
 ---
 

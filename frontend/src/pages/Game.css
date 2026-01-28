@@ -193,6 +193,9 @@
   border-radius: 16px 16px 0 0;
   backdrop-filter: blur(8px);
   margin: 0 -16px -16px -16px;
+  width: calc(100% + 32px);
+  max-width: calc(100vw);
+  overflow: hidden;
 }
 
 /* Mobile adjustments */
@@ -235,5 +238,6 @@
   .your-hand-section {
     padding: 10px;
     margin: 0 -8px -8px -8px;
+    width: calc(100% + 16px);
   }
 }
