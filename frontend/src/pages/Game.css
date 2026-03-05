@@ -34,6 +34,56 @@
   }
 }
 
+/* Event notification */
+.event-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, rgba(45, 95, 93, 0.95), rgba(31, 68, 66, 0.95));
+  color: white;
+  padding: 24px 40px;
+  border-radius: 16px;
+  text-align: center;
+  z-index: 200;
+  animation: eventPop 0.4s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 80px rgba(45, 95, 93, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.event-card-name {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.event-message {
+  font-size: 16px;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.event-player {
+  font-size: 14px;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+@keyframes eventPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 /* Game header */
 .game-header {
   display: flex;
@@ -88,36 +138,52 @@
   color: var(--text-secondary);
 }
 
-/* Main game area */
+/* Main game area - column-reverse puts YOUR section at bottom */
 .game-main {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 16px;
   overflow-y: auto;
 }
 
-/* Opponents section */
-.opponents-section {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
+/* Section labels */
+.section-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted, #888);
+  margin-bottom: 12px;
+  padding-left: 4px;
 }
 
-.opponents-section .player-board {
-  flex: 1;
-  min-width: 280px;
-  max-width: 400px;
-}
-
-/* Center section */
-.center-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
+/* YOUR SECTION - Bottom, most prominent */
+.your-section {
+  background: var(--bg-card, rgba(255, 255, 255, 0.85));
+  border-radius: 16px;
   padding: 16px;
+  backdrop-filter: blur(8px);
+  border: 2px solid var(--forest-primary, #2d5f5d);
+  box-shadow: 0 4px 20px rgba(45, 95, 93, 0.15);
+}
+
+.your-section .section-label {
+  color: var(--forest-primary, #2d5f5d);
+}
+
+/* Your hand container */
+.your-hand-container {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(45, 95, 93, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(45, 95, 93, 0.1);
+}
+
+/* Your play area */
+.your-play-area {
+  margin-top: 8px;
 }
 
 /* Action buttons */
@@ -127,6 +193,7 @@
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
+  margin-bottom: 16px;
 }
 
 .btn {
@@ -173,29 +240,57 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 16px;
-  background: rgba(201, 168, 106, 0.2);
-  border: 2px solid var(--warning);
+  padding: 12px 20px;
+  background: rgba(201, 168, 106, 0.3);
+  border: 2px solid var(--warning, #c9a86a);
   border-radius: 8px;
   font-size: 14px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
-/* Your play area */
-.your-play-area {
-  margin-top: auto;
+/* Section divider with deck */
+.section-divider {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
 }
 
-/* Your hand section */
-.your-hand-section {
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border-medium, #ccc), transparent);
+  margin: 0 20px;
+}
+
+/* OPPONENTS SECTION - Top, secondary */
+.opponents-section {
+  background: var(--bg-card, rgba(255, 255, 255, 0.6));
+  border-radius: 12px;
   padding: 16px;
-  background: var(--bg-card, rgba(255, 255, 255, 0.7));
-  border-radius: 16px 16px 0 0;
-  backdrop-filter: blur(8px);
-  margin: 0 -16px -16px -16px;
-  width: calc(100% + 32px);
-  max-width: calc(100vw);
-  overflow: hidden;
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-light, #ddd);
+}
+
+.opponents-section .section-label {
+  color: var(--text-muted, #888);
+}
+
+.opponents-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.opponents-grid .player-board {
+  flex: 1;
+  min-width: 280px;
+  max-width: 400px;
 }
 
 /* Mobile adjustments */
@@ -214,16 +309,34 @@
     gap: 12px;
   }
 
+  .your-section {
+    padding: 12px;
+  }
+
+  .your-hand-container {
+    padding: 8px;
+    margin-bottom: 12px;
+  }
+
+  .section-divider {
+    padding: 12px;
+  }
+
+  .section-divider::before,
+  .section-divider::after {
+    margin: 0 10px;
+  }
+
   .opponents-section {
+    padding: 12px;
+  }
+
+  .opponents-grid {
     gap: 8px;
   }
 
-  .opponents-section .player-board {
+  .opponents-grid .player-board {
     min-width: 100%;
-  }
-
-  .center-section {
-    padding: 8px;
   }
 
   .action-buttons {
@@ -235,9 +348,8 @@
     width: 100%;
   }
 
-  .your-hand-section {
-    padding: 10px;
-    margin: 0 -8px -8px -8px;
-    width: calc(100% + 16px);
+  .targeting-hint {
+    flex-direction: column;
+    text-align: center;
   }
 }

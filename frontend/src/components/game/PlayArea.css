@@ -42,11 +42,54 @@
 
 .no-gubs {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100px;
   color: var(--text-muted);
   font-style: italic;
+  gap: 8px;
+}
+
+.no-gubs .target-hint {
+  font-size: 12px;
+  color: var(--warning, #c9a86a);
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Targeting mode styles */
+.play-area.targetable {
+  border-color: var(--warning, #c9a86a);
+  background: rgba(201, 168, 106, 0.1);
+  animation: targetPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes targetPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 106, 0.4); }
+  50% { box-shadow: 0 0 15px 5px rgba(201, 168, 106, 0.3); }
+}
+
+.target-instruction {
+  text-align: center;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: rgba(201, 168, 106, 0.2);
+  border: 1px solid var(--warning, #c9a86a);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.gub-stack.clickable {
+  cursor: pointer;
+}
+
+.gub-stack.clickable:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(201, 168, 106, 0.4);
+  border-color: var(--warning, #c9a86a);
 }
 
 .gubs-container {

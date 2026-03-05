@@ -12,6 +12,7 @@ import './PlayArea.css';
  * @param {boolean} props.isCurrentPlayer - Whether this is the current player viewing
  * @param {Function} props.onGubClick - Handler when a Gub is clicked (for targeting)
  * @param {string} props.selectedGubId - ID of currently selected Gub
+ * @param {boolean} props.isTargetable - Whether Gubs can be targeted
  */
 function PlayArea({
   playArea = { gubs: [], protectedGubs: [], trappedGubs: [] },
@@ -19,7 +20,8 @@ function PlayArea({
   score = 0,
   isCurrentPlayer = false,
   onGubClick,
-  selectedGubId = null
+  selectedGubId = null,
+  isTargetable = false
 }) {
   const { gubs = [], protectedGubs = [], trappedGubs = [] } = playArea;
 
@@ -36,33 +38,32 @@ function PlayArea({
     });
   });
 
-  // Add protected Gubs
-  protectedGubs.forEach(item => {
-    if (item.gub) {
-      allGubsMap.set(item.gub.id, {
-        card: item.gub,
-        status: 'protected',
-        protection: item.barricade,
-        trap: null
-      });
-    }
+  // Add protected Gubs - backend sends gubs with protectionCards array
+  protectedGubs.forEach(gub => {
+    const protection = gub.protectionCards && gub.protectionCards.length > 0
+      ? gub.protectionCards[0]
+      : null;
+    allGubsMap.set(gub.id, {
+      card: gub,
+      status: 'protected',
+      protection: protection,
+      trap: null
+    });
   });
 
-  // Add trapped Gubs
-  trappedGubs.forEach(item => {
-    if (item.gub) {
-      const existing = allGubsMap.get(item.gub.id);
-      if (existing) {
-        existing.trap = item.trap;
-        existing.status = existing.protection ? 'protected-trapped' : 'trapped';
-      } else {
-        allGubsMap.set(item.gub.id, {
-          card: item.gub,
-          status: 'trapped',
-          protection: null,
-          trap: item.trap
-        });
-      }
+  // Add trapped Gubs - backend sends gubs with trapCard
+  trappedGubs.forEach(gub => {
+    const existing = allGubsMap.get(gub.id);
+    if (existing) {
+      existing.trap = gub.trapCard;
+      existing.status = existing.protection ? 'protected-trapped' : 'trapped';
+    } else {
+      allGubsMap.set(gub.id, {
+        card: gub,
+        status: 'trapped',
+        protection: null,
+        trap: gub.trapCard
+      });
     }
   });
 
@@ -74,24 +75,28 @@ function PlayArea({
     }
   };
 
+  const targetableClass = isTargetable ? 'targetable' : '';
+  const clickableClass = onGubClick ? 'clickable' : '';
+
   if (allGubs.length === 0) {
     return (
-      <div className={`play-area ${isCurrentPlayer ? 'current-player' : ''}`}>
+      <div className={`play-area ${isCurrentPlayer ? 'current-player' : ''} ${targetableClass}`}>
         <div className="play-area-header">
-          <h3>{playerName}&apos;s Play Area</h3>
+          <h3>{playerName}&apos;s Gubs</h3>
           <div className="score-display">Score: {score}</div>
         </div>
         <div className="no-gubs">
-          <p>No Gubs in play</p>
+          <p>No Gubs in play yet</p>
+          {isTargetable && <p className="target-hint">Play a Gub first, then protect it</p>}
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`play-area ${isCurrentPlayer ? 'current-player' : ''}`}>
+    <div className={`play-area ${isCurrentPlayer ? 'current-player' : ''} ${targetableClass}`}>
       <div className="play-area-header">
-        <h3>{playerName}&apos;s Play Area</h3>
+        <h3>{playerName}&apos;s Gubs</h3>
         <div className="score-display">
           Score: {score}
           <span className="score-breakdown">
@@ -100,11 +105,15 @@ function PlayArea({
         </div>
       </div>
 
+      {isTargetable && (
+        <div className="target-instruction">Click a Gub to select it as target</div>
+      )}
+
       <div className="gubs-container">
         {allGubs.map((gubData, index) => (
           <div
             key={gubData.card.id || index}
-            className={`gub-stack ${gubData.status} ${selectedGubId === gubData.card.id ? 'selected' : ''}`}
+            className={`gub-stack ${gubData.status} ${selectedGubId === gubData.card.id ? 'selected' : ''} ${clickableClass}`}
             onClick={() => handleGubClick(gubData)}
           >
             {/* The Gub card */}
@@ -152,7 +161,8 @@ PlayArea.propTypes = {
   score: PropTypes.number,
   isCurrentPlayer: PropTypes.bool,
   onGubClick: PropTypes.func,
-  selectedGubId: PropTypes.string
+  selectedGubId: PropTypes.string,
+  isTargetable: PropTypes.bool
 };
 
 export default PlayArea;

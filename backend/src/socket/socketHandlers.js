@@ -1,4 +1,5 @@
 const { games } = require('../controllers/gameController');
+const { validateCardPlay, executeCardEffect, executeEventCard } = require('../services/gameEngine');
 
 /**
  * Initialize Socket.IO event handlers
@@ -241,6 +242,35 @@ function initializeSocketHandlers(io) {
           cardsRemaining: game.deck.getCardsRemaining()
         });
 
+        // If it's an Event card (not letter), execute the event effect
+        if (result.isEvent && !result.isLetter) {
+          const eventResult = executeEventCard(game, result.card, playerId);
+
+          // Broadcast the event effect to all players
+          io.to(game.roomCode).emit('event:triggered', {
+            eventCard: result.card.toJSON(),
+            drawingPlayerId: playerId,
+            drawingPlayerName: currentPlayer.name,
+            result: eventResult
+          });
+
+          // Add event card to discard pile (it doesn't go to hand)
+          game.deck.addToDiscard(result.card);
+
+          // Update hands for affected players (e.g., Gargok Plague)
+          game.players.forEach(p => {
+            const playerSocket = Array.from(io.sockets.sockets.values()).find(
+              s => s.data?.playerId === p.id
+            );
+            if (playerSocket) {
+              playerSocket.emit('hand:update', {
+                playerId: p.id,
+                hand: p.hand.map(card => card.toJSON())
+              });
+            }
+          });
+        }
+
         // If letter was drawn, broadcast letter info
         if (result.isLetter) {
           io.to(game.roomCode).emit('letter:drawn', {
@@ -287,15 +317,48 @@ function initializeSocketHandlers(io) {
           return;
         }
 
-        // Play the card
-        const result = game.playerPlayCard(playerId, cardId, target);
+        // Validate the card play first
+        const validation = validateCardPlay(game, playerId, cardId, target);
+        if (!validation.valid) {
+          socket.emit('error', { message: validation.error });
+          return;
+        }
 
-        // Broadcast card played to all players
+        // Get the card before removing from hand
+        const card = player.hand.find(c => c.id === cardId || c.instanceId === cardId);
+        if (!card) {
+          socket.emit('error', { message: 'Card not found in hand' });
+          return;
+        }
+
+        // Remove card from hand
+        player.removeCardFromHand(cardId);
+
+        // Execute the card effect
+        const result = executeCardEffect(game, card, playerId, target);
+
+        if (!result.success) {
+          // If effect failed, return card to hand
+          player.addCardToHand(card);
+          socket.emit('error', { message: result.message });
+          return;
+        }
+
+        // Discard the played card (unless it's a Gub, Barricade, Trap, or Ring)
+        const isPersistent = ['Gub', 'Barricade', 'Trap'].includes(card.type) ||
+                            card.name.includes('Ring');
+        if (!isPersistent) {
+          game.deck.addToDiscard(card);
+        }
+
+        // Broadcast card played with effect details
         io.to(game.roomCode).emit('card:played', {
           playerId,
           playerName: player.name,
-          card: result.card.toJSON(),
-          target
+          card: card.toJSON(),
+          target,
+          effect: result.effects,
+          message: result.message
         });
 
         // Update each player's hand (only send their own hand)
@@ -306,7 +369,7 @@ function initializeSocketHandlers(io) {
           if (playerSocket) {
             playerSocket.emit('hand:update', {
               playerId: p.id,
-              hand: p.hand.map(card => card.toJSON())
+              hand: p.hand.map(c => c.toJSON())
             });
           }
         });
@@ -314,7 +377,7 @@ function initializeSocketHandlers(io) {
         // Broadcast updated game state
         io.to(game.roomCode).emit('gameState:update', game.toJSON());
 
-        console.log(`Player ${player.name} played ${result.card.name}`);
+        console.log(`Player ${player.name} played ${card.name}: ${result.message}`);
       } catch (error) {
         console.error('Error playing card:', error);
         socket.emit('error', { message: error.message });

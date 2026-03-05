@@ -28,11 +28,13 @@ class Player {
 
   /**
    * Remove a card from the player's hand
-   * @param {string} cardId - ID of the card to remove
+   * @param {string} cardId - ID of the card to remove (matches id or instanceId)
    * @returns {Card|null} - The removed card or null if not found
    */
   removeCardFromHand(cardId) {
-    const cardIndex = this.hand.findIndex(card => card.id === cardId);
+    const cardIndex = this.hand.findIndex(card =>
+      card.id === cardId || card.instanceId === cardId
+    );
 
     if (cardIndex === -1) {
       return null;
@@ -44,11 +46,11 @@ class Player {
 
   /**
    * Check if player has a specific card in hand
-   * @param {string} cardId - ID of the card to check
+   * @param {string} cardId - ID of the card to check (matches id or instanceId)
    * @returns {boolean}
    */
   hasCard(cardId) {
-    return this.hand.some(card => card.id === cardId);
+    return this.hand.some(card => card.id === cardId || card.instanceId === cardId);
   }
 
   /**

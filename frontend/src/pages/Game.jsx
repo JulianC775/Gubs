@@ -32,6 +32,7 @@ function Game() {
   const [targetingMode, setTargetingMode] = useState(null);
   const [error, setError] = useState(null);
   const [hasDrawnThisTurn, setHasDrawnThisTurn] = useState(false);
+  const [activeEvent, setActiveEvent] = useState(null);
 
   // Get current player
   const currentPlayer = players[currentPlayerIndex];
@@ -56,12 +57,20 @@ function Game() {
       setTargetingMode(null);
     };
 
+    const handleEventTriggered = (data) => {
+      setActiveEvent(data);
+      // Auto-dismiss after 4 seconds
+      setTimeout(() => setActiveEvent(null), 4000);
+    };
+
     on('error', handleError);
     on('turn:changed', handleTurnChanged);
+    on('event:triggered', handleEventTriggered);
 
     return () => {
       off('error', handleError);
       off('turn:changed', handleTurnChanged);
+      off('event:triggered', handleEventTriggered);
     };
   }, [on, off]);
 
@@ -122,8 +131,8 @@ function Game() {
     if (!targetingMode || !selectedCard) return;
 
     handlePlayCard({
-      targetPlayerId: targetData.playerId,
-      targetGubId: targetData.gubId
+      playerId: targetData.playerId,
+      gubId: targetData.gubId
     });
   }, [targetingMode, selectedCard, handlePlayCard]);
 
@@ -170,6 +179,15 @@ function Game() {
         </div>
       )}
 
+      {/* Event notification */}
+      {activeEvent && (
+        <div className="event-notification">
+          <div className="event-card-name">{activeEvent.eventCard?.name}</div>
+          <div className="event-message">{activeEvent.result?.message}</div>
+          <div className="event-player">Drawn by {activeEvent.drawingPlayerName}</div>
+        </div>
+      )}
+
       {/* Game header */}
       <header className="game-header">
         <div className="game-info">
@@ -185,33 +203,22 @@ function Game() {
         </div>
       </header>
 
-      {/* Main game area */}
+      {/* Main game area - reorganized for clarity */}
       <main className="game-main">
-        {/* Opponents section */}
-        <section className="opponents-section">
-          {opponents.map(opponent => (
-            <PlayerBoard
-              key={opponent.id}
-              player={opponent}
-              isCurrentTurn={currentPlayer?.id === opponent.id}
-              onGubSelect={targetingMode ? (gubData) => handleTargetSelect({
-                playerId: opponent.id,
-                gubId: gubData.card.id
-              }) : undefined}
-              isTargetable={targetingMode && ['Spear', 'Lure', 'Super Lure', 'Smahl Thief'].includes(selectedCard?.name)}
-            />
-          ))}
-        </section>
 
-        {/* Center section - deck and game state */}
-        <section className="center-section">
-          <Deck
-            cardsRemaining={deck?.cardsRemaining || 0}
-            drawnLetters={drawnLetters || []}
-            discardPile={[]}
-            onDrawCard={handleDrawCard}
-            canDraw={isMyTurn && !hasDrawnThisTurn}
-          />
+        {/* YOUR SECTION - Bottom of screen, most prominent */}
+        <section className="your-section">
+          <div className="section-label">Your Cards</div>
+
+          {/* Your hand */}
+          <div className="your-hand-container">
+            <Hand
+              cards={hand}
+              onCardClick={handleCardSelect}
+              selectedCardId={selectedCard?.id}
+              isMyTurn={isMyTurn}
+            />
+          </div>
 
           {/* Action buttons */}
           {isMyTurn && (
@@ -226,7 +233,9 @@ function Game() {
               )}
               {targetingMode && (
                 <div className="targeting-hint">
-                  Select a target for {selectedCard?.name}
+                  {targetingMode === 'Barricade'
+                    ? `Select one of YOUR Gubs to protect with ${selectedCard?.name}`
+                    : `Select a target for ${selectedCard?.name}`}
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => {
@@ -247,32 +256,53 @@ function Game() {
               </button>
             </div>
           )}
+
+          {/* Your play area */}
+          <div className="your-play-area">
+            <PlayArea
+              playArea={myPlayerData?.playArea || playArea}
+              playerName="You"
+              score={myPlayerData?.score || 0}
+              isCurrentPlayer={true}
+              onGubClick={targetingMode === 'Barricade' ? (gubData) => handleTargetSelect({
+                playerId: playerId,
+                gubId: gubData.card.id
+              }) : undefined}
+              isTargetable={targetingMode === 'Barricade'}
+            />
+          </div>
         </section>
 
-        {/* Your play area */}
-        <section className="your-play-area">
-          <PlayArea
-            playArea={myPlayerData?.playArea || playArea}
-            playerName={playerName}
-            score={myPlayerData?.score || 0}
-            isCurrentPlayer={true}
-            onGubClick={targetingMode === 'Barricade' ? (gubData) => handleTargetSelect({
-              playerId: playerId,
-              gubId: gubData.card.id
-            }) : undefined}
+        {/* DIVIDER */}
+        <div className="section-divider">
+          <Deck
+            cardsRemaining={deck?.cardsRemaining || 0}
+            drawnLetters={drawnLetters || []}
+            discardPile={[]}
+            onDrawCard={handleDrawCard}
+            canDraw={isMyTurn && !hasDrawnThisTurn}
           />
+        </div>
+
+        {/* OPPONENTS SECTION - Top of screen */}
+        <section className="opponents-section">
+          <div className="section-label">Opponents</div>
+          <div className="opponents-grid">
+            {opponents.map(opponent => (
+              <PlayerBoard
+                key={opponent.id}
+                player={opponent}
+                isCurrentTurn={currentPlayer?.id === opponent.id}
+                onGubSelect={targetingMode && targetingMode !== 'Barricade' ? (gubData) => handleTargetSelect({
+                  playerId: opponent.id,
+                  gubId: gubData.card.id
+                }) : undefined}
+                isTargetable={targetingMode && targetingMode !== 'Barricade' && ['Spear', 'Lure', 'Super Lure', 'Smahl Thief', 'Trap'].includes(selectedCard?.name || selectedCard?.type)}
+              />
+            ))}
+          </div>
         </section>
       </main>
-
-      {/* Your hand */}
-      <footer className="your-hand-section">
-        <Hand
-          cards={hand}
-          onCardClick={handleCardSelect}
-          selectedCardId={selectedCard?.id}
-          isMyTurn={isMyTurn}
-        />
-      </footer>
     </div>
   );
 }

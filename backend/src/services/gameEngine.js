@@ -18,8 +18,8 @@ function validateCardPlay(game, playerId, cardId, target = {}) {
     return { valid: false, error: 'Player not found' };
   }
 
-  // Check if player has the card
-  const card = player.hand.find(c => c.id === cardId);
+  // Check if player has the card (check both id and instanceId)
+  const card = player.hand.find(c => c.id === cardId || c.instanceId === cardId);
   if (!card) {
     return { valid: false, error: 'Card not in hand' };
   }
@@ -824,7 +824,128 @@ function playInterrupt(game, player, card, target) {
   return { success: true, message: `${player.name} played ${card.name}` };
 }
 
+/**
+ * Execute an Event card's effect (triggered when drawn)
+ * @param {Game} game - The game instance
+ * @param {Card} card - The Event card
+ * @param {string} drawingPlayerId - ID of the player who drew the card
+ * @returns {Object} - { success, message, effects }
+ */
+function executeEventCard(game, card, drawingPlayerId) {
+  const drawingPlayer = game.getPlayer(drawingPlayerId);
+
+  switch (card.name) {
+    case 'Flash Flood':
+      return executeFlashFlood(game, drawingPlayer);
+
+    case 'Gargok Plague':
+      return executeGargokPlague(game, drawingPlayerId);
+
+    case 'G':
+    case 'U':
+    case 'B':
+      // Letter cards - game ending is handled elsewhere
+      return {
+        success: true,
+        message: `Letter ${card.name} drawn!`,
+        effects: { type: 'letter-drawn', letter: card.name },
+        isLetter: true
+      };
+
+    default:
+      // Unknown event card - just acknowledge it
+      return {
+        success: true,
+        message: `${drawingPlayer.name} drew ${card.name}`,
+        effects: { type: 'event-drawn', card: card.toJSON() }
+      };
+  }
+}
+
+/**
+ * Execute Flash Flood - discards all unprotected Gubs from ALL players
+ */
+function executeFlashFlood(game, drawingPlayer) {
+  const affectedPlayers = [];
+
+  game.players.forEach(player => {
+    const freeGubs = [...player.playArea.gubs];
+    freeGubs.forEach(gub => {
+      player.removeGub(gub.id);
+      game.deck.addToDiscard(gub);
+      affectedPlayers.push({
+        playerId: player.id,
+        playerName: player.name,
+        discardedGub: gub.toJSON()
+      });
+    });
+  });
+
+  return {
+    success: true,
+    message: `Flash Flood! ${affectedPlayers.length} unprotected Gubs were washed away.`,
+    effects: {
+      type: 'flash-flood',
+      affectedPlayers
+    }
+  };
+}
+
+/**
+ * Execute Gargok Plague - all OTHER players shuffle hands back and redraw
+ */
+function executeGargokPlague(game, drawingPlayerId) {
+  const affectedPlayers = [];
+
+  game.players.forEach(player => {
+    if (player.id !== drawingPlayerId) {
+      const handSize = player.hand.length;
+
+      // Return hand to deck
+      player.hand.forEach(card => {
+        game.deck.cards.push(card);
+      });
+      player.hand = [];
+
+      // Shuffle deck
+      game.deck.shuffle();
+
+      // Redraw same number of cards (skip Event cards)
+      let cardsDrawn = 0;
+      while (cardsDrawn < handSize && game.deck.getCardsRemaining() > 0) {
+        const newCard = game.deck.drawCard();
+        if (newCard) {
+          if (newCard.type === 'Event') {
+            // Put Event back and shuffle again
+            game.deck.cards.push(newCard);
+            game.deck.shuffle();
+          } else {
+            player.addCardToHand(newCard);
+            cardsDrawn++;
+          }
+        }
+      }
+
+      affectedPlayers.push({
+        playerId: player.id,
+        playerName: player.name,
+        cardsRedrawn: cardsDrawn
+      });
+    }
+  });
+
+  return {
+    success: true,
+    message: `Gargok Plague! ${affectedPlayers.length} players shuffled and redrew their hands.`,
+    effects: {
+      type: 'gargok-plague',
+      affectedPlayers
+    }
+  };
+}
+
 module.exports = {
   validateCardPlay,
-  executeCardEffect
+  executeCardEffect,
+  executeEventCard
 };
