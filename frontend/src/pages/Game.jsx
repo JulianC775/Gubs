@@ -1,420 +1,309 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSocket } from '../contexts/SocketContext';
 import { useGame } from '../contexts/GameContext';
 import { usePlayer } from '../contexts/PlayerContext';
-import ForestBackground from '../components/ForestBackground';
-import ForestParticles from '../components/ForestParticles';
+import { useSocket } from '../contexts/SocketContext';
 import Hand from '../components/game/Hand';
 import PlayArea from '../components/game/PlayArea';
 import PlayerBoard from '../components/game/PlayerBoard';
+import Deck from '../components/game/Deck';
+import GameEndScreen from '../components/game/GameEndScreen';
+import ForestBackground from '../components/ForestBackground';
 import './Game.css';
 
 function Game() {
-  const { gameId } = useParams();
+  const { roomCode } = useParams();
   const navigate = useNavigate();
-  const { connected, emit, on, off } = useSocket();
-  const { players, currentPlayerIndex, turnNumber, drawnLetters, deck, dispatch } = useGame();
-  const { playerId, hand, playArea, dispatch: playerDispatch } = usePlayer();
+  const { emit, on, off } = useSocket();
+  const {
+    gameId,
+    players,
+    currentPlayerIndex,
+    turnNumber,
+    drawnLetters,
+    deck,
+    status,
+    winner,
+    scores
+  } = useGame();
+  const { playerId, playerName, hand, playArea } = usePlayer();
 
   const [selectedCard, setSelectedCard] = useState(null);
-  const [targetingMode, setTargetingMode] = useState(null); // null | 'own-gub' | 'opponent-gub' | 'player'
-  const [selectedTarget, setSelectedTarget] = useState(null); // { playerId?, gubInstanceId? }
-  const [hasDrawnCard, setHasDrawnCard] = useState(false);
-  const [gameLog, setGameLog] = useState([]);
-  const [notification, setNotification] = useState(null);
+  const [targetingMode, setTargetingMode] = useState(null);
   const [error, setError] = useState(null);
-  const [gameOver, setGameOver] = useState(null);
+  const [hasDrawnThisTurn, setHasDrawnThisTurn] = useState(false);
+  const [activeEvent, setActiveEvent] = useState(null);
 
+  // Get current player
   const currentPlayer = players[currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === playerId;
-  const myPlayerData = players.find(p => p.id === playerId);
+
+  // Get opponents (all players except current user)
   const opponents = players.filter(p => p.id !== playerId);
 
-  // Request game state on mount
+  // Get my player data from the game state
+  const myPlayerData = players.find(p => p.id === playerId);
+
+  // Handle socket events
   useEffect(() => {
-    if (connected && gameId) {
-      emit('game:getState', { gameId });
-    }
-  }, [connected, gameId, emit]);
-
-  const showNotification = useCallback((msg, type = 'info') => {
-    setNotification({ msg, type });
-    const timer = setTimeout(() => setNotification(null), 3500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const addLog = useCallback((msg) => {
-    setGameLog(prev => [...prev.slice(-29), msg]);
-  }, []);
-
-  // Socket event listeners
-  useEffect(() => {
-    const handleCardDrawn = (data) => {
-      // PlayerContext already updates hand; just track that we drew
-      setHasDrawnCard(true);
-      if (data.isLetter) {
-        showNotification(`You drew the letter "${data.card?.name}"!`, 'warning');
-      } else if (data.isEvent) {
-        showNotification(`Event card: ${data.card?.name}`, 'info');
-        addLog(`You triggered event: ${data.card?.name}`);
-      }
-    };
-
-    const handleGameCardDrawn = (data) => {
-      if (data.isLetter) {
-        addLog(`${data.playerName} drew letter "${data.card?.name}"!`);
-      } else if (data.isEvent) {
-        addLog(`${data.playerName} drew event: ${data.card?.name}`);
-      } else {
-        addLog(`${data.playerName} drew a card (${data.cardsRemaining} left in deck)`);
-      }
-    };
-
-    const handleLetterDrawn = (data) => {
-      showNotification(
-        `Letter "${data.letter}" drawn! [${data.drawnLetters.join(' ')}]`,
-        'warning'
-      );
-    };
-
-    const handleCardPlayed = (data) => {
-      addLog(`${data.playerName} played ${data.card.name}`);
-    };
-
-    const handleTurnChanged = (data) => {
-      setHasDrawnCard(false);
-      setSelectedCard(null);
-      setTargetingMode(null);
-      setSelectedTarget(null);
-      if (data.currentPlayerId === playerId) {
-        showNotification("It's your turn!", 'success');
-      } else {
-        addLog(`Turn ${data.turnNumber}: ${data.currentPlayerName}'s turn`);
-      }
-    };
-
-    const handleGameEnded = (data) => {
-      setGameOver(data);
-    };
-
     const handleError = (data) => {
       setError(data.message);
-      const timer = setTimeout(() => setError(null), 3500);
-      return () => clearTimeout(timer);
+      setTimeout(() => setError(null), 3000);
     };
 
-    on('card:drawn', handleCardDrawn);
-    on('game:cardDrawn', handleGameCardDrawn);
-    on('letter:drawn', handleLetterDrawn);
-    on('card:played', handleCardPlayed);
-    on('turn:changed', handleTurnChanged);
-    on('game:ended', handleGameEnded);
-    on('error', handleError);
-
-    return () => {
-      off('card:drawn', handleCardDrawn);
-      off('game:cardDrawn', handleGameCardDrawn);
-      off('letter:drawn', handleLetterDrawn);
-      off('card:played', handleCardPlayed);
-      off('turn:changed', handleTurnChanged);
-      off('game:ended', handleGameEnded);
-      off('error', handleError);
-    };
-  }, [on, off, playerId, addLog, showNotification]);
-
-  const handleDrawCard = () => {
-    if (!isMyTurn || hasDrawnCard) return;
-    emit('game:drawCard', { gameId, playerId });
-  };
-
-  const handleCardClick = (card) => {
-    // Deselect if clicking same card
-    if (selectedCard?.instanceId === card.instanceId) {
+    const handleTurnChanged = () => {
+      setHasDrawnThisTurn(false);
       setSelectedCard(null);
       setTargetingMode(null);
-      setSelectedTarget(null);
-      return;
+    };
+
+    const handleEventTriggered = (data) => {
+      setActiveEvent(data);
+      // Auto-dismiss after 4 seconds
+      setTimeout(() => setActiveEvent(null), 4000);
+    };
+
+    on('error', handleError);
+    on('turn:changed', handleTurnChanged);
+    on('event:triggered', handleEventTriggered);
+
+    return () => {
+      off('error', handleError);
+      off('turn:changed', handleTurnChanged);
+      off('event:triggered', handleEventTriggered);
+    };
+  }, [on, off]);
+
+  // Rejoin game on mount if we have player info
+  useEffect(() => {
+    if (gameId && playerId) {
+      emit('game:rejoin', { gameId, playerId });
     }
+  }, [gameId, playerId, emit]);
 
-    setSelectedCard(card);
-    setSelectedTarget(null);
+  // Draw card handler
+  const handleDrawCard = useCallback(() => {
+    if (!isMyTurn || hasDrawnThisTurn) return;
 
-    // Set targeting mode based on card type
-    switch (card.type) {
-      case 'Barricade':
-        setTargetingMode('own-gub');
-        break;
-      case 'Trap':
-        setTargetingMode('opponent-gub');
-        break;
-      case 'Tool':
-      case 'Hazard':
-        setTargetingMode('player');
-        break;
-      default:
-        // Gubs, Interrupts — no targeting needed
+    emit('game:drawCard', { gameId, playerId });
+    setHasDrawnThisTurn(true);
+  }, [isMyTurn, hasDrawnThisTurn, gameId, playerId, emit]);
+
+  // Card selection handler
+  const handleCardSelect = useCallback((card) => {
+    if (!isMyTurn) return;
+
+    if (selectedCard?.id === card.id) {
+      setSelectedCard(null);
+      setTargetingMode(null);
+    } else {
+      setSelectedCard(card);
+
+      // Check if card needs a target
+      const needsTarget = ['Barricade', 'Trap', 'Tool'].includes(card.type) ||
+                         ['Spear', 'Lure', 'Super Lure', 'Smahl Thief'].includes(card.name);
+
+      if (needsTarget) {
+        setTargetingMode(card.type);
+      } else {
         setTargetingMode(null);
+      }
     }
-  };
+  }, [isMyTurn, selectedCard]);
 
-  const handleGubClick = (gub, ownerId) => {
-    if (!selectedCard || !targetingMode) return;
-    if (targetingMode === 'own-gub' && ownerId === playerId) {
-      setSelectedTarget({ playerId: ownerId, gubInstanceId: gub.instanceId });
-    } else if (targetingMode === 'opponent-gub' && ownerId !== playerId) {
-      setSelectedTarget({ playerId: ownerId, gubInstanceId: gub.instanceId });
-    }
-  };
-
-  const handlePlayerTargetClick = (targetPlayerId) => {
-    if (!selectedCard || targetingMode !== 'player') return;
-    setSelectedTarget({ playerId: targetPlayerId });
-  };
-
-  const handlePlayCard = () => {
-    if (!selectedCard) return;
-
-    if (targetingMode && !selectedTarget) {
-      setError('Select a target first');
-      setTimeout(() => setError(null), 2000);
-      return;
-    }
+  // Play card handler
+  const handlePlayCard = useCallback((target = null) => {
+    if (!selectedCard || !isMyTurn) return;
 
     emit('game:playCard', {
       gameId,
       playerId,
       cardId: selectedCard.id,
-      target: selectedTarget,
+      target
     });
 
     setSelectedCard(null);
     setTargetingMode(null);
-    setSelectedTarget(null);
-  };
+  }, [selectedCard, isMyTurn, gameId, playerId, emit]);
 
-  const handleEndTurn = () => {
+  // Target selection handler (for opponent gubs, etc.)
+  const handleTargetSelect = useCallback((targetData) => {
+    if (!targetingMode || !selectedCard) return;
+
+    handlePlayCard({
+      playerId: targetData.playerId,
+      gubId: targetData.gubId
+    });
+  }, [targetingMode, selectedCard, handlePlayCard]);
+
+  // End turn handler
+  const handleEndTurn = useCallback(() => {
     if (!isMyTurn) return;
+
     if (hand.length > 8) {
-      setError('Discard down to 8 cards before ending your turn');
-      setTimeout(() => setError(null), 3000);
+      setError('You must discard down to 8 cards before ending your turn');
       return;
     }
+
     emit('game:endTurn', { gameId, playerId });
-  };
+  }, [isMyTurn, hand.length, gameId, playerId, emit]);
 
-  // ── Redirect if not in a game ──
-  if (!playerId) {
+  // Leave game handler
+  const handleLeaveGame = useCallback(() => {
     navigate('/');
-    return null;
-  }
+  }, [navigate]);
 
-  // ── Game Over Screen ──
-  if (gameOver) {
-    const winnerName = gameOver.winner?.name;
-    const isWinner = gameOver.finalScores?.find(s => s.playerName === winnerName)?.playerId === playerId;
-
+  // Render game ended screen
+  if (status === 'ended') {
     return (
       <>
         <ForestBackground />
-        <div className="game-container">
-          <div className="game-over-screen">
-            <div className="game-over-title">{isWinner ? '🏆 You Win!' : 'Game Over'}</div>
-            <div className="game-over-winner">Winner: {winnerName}</div>
-            <div className="final-scores">
-              {(gameOver.finalScores || [])
-                .sort((a, b) => b.score - a.score)
-                .map(s => (
-                  <div
-                    key={s.playerId}
-                    className={`score-row ${s.playerName === winnerName ? 'winner' : ''}`}
-                  >
-                    <span className="score-name">{s.playerName}</span>
-                    <span className="score-value">{s.gubs} Gubs</span>
-                  </div>
-                ))}
-            </div>
-            <button className="btn-primary" onClick={() => navigate('/')}>
-              Return Home
-            </button>
-          </div>
-        </div>
+        <GameEndScreen
+          winner={winner}
+          scores={scores}
+          currentPlayerId={playerId}
+          onLeaveGame={handleLeaveGame}
+        />
       </>
     );
   }
-
-  // ── Loading ──
-  if (players.length === 0) {
-    return (
-      <>
-        <ForestBackground />
-        <div className="game-container">
-          <div className="game-loading">Loading game…</div>
-        </div>
-      </>
-    );
-  }
-
-  const needsDiscard = hand.length > 8;
 
   return (
-    <>
+    <div className="game-page">
       <ForestBackground />
-      <ForestParticles />
 
-      {notification && (
-        <div className={`game-notification ${notification.type}`}>
-          {notification.msg}
-        </div>
-      )}
-
+      {/* Error toast */}
       {error && (
-        <div className="game-notification error">
+        <div className="error-toast">
           {error}
         </div>
       )}
 
-      <div className="game-container">
+      {/* Event notification */}
+      {activeEvent && (
+        <div className="event-notification">
+          <div className="event-card-name">{activeEvent.eventCard?.name}</div>
+          <div className="event-message">{activeEvent.result?.message}</div>
+          <div className="event-player">Drawn by {activeEvent.drawingPlayerName}</div>
+        </div>
+      )}
 
-        {/* Header */}
-        <header className="game-header">
-          <div className="header-turn">
-            <span className="turn-number">Turn {turnNumber}</span>
-            <span className={`turn-status ${isMyTurn ? 'my-turn' : ''}`}>
-              {isMyTurn ? 'Your Turn' : `${currentPlayer?.name ?? '…'}'s Turn`}
-            </span>
+      {/* Game header */}
+      <header className="game-header">
+        <div className="game-info">
+          <span className="room-code">Room: {roomCode}</span>
+          <span className="turn-info">Turn {turnNumber}</span>
+        </div>
+        <div className="current-turn-indicator">
+          {isMyTurn ? (
+            <span className="your-turn">Your Turn</span>
+          ) : (
+            <span className="waiting">{currentPlayer?.name}&apos;s Turn</span>
+          )}
+        </div>
+      </header>
+
+      {/* Main game area - reorganized for clarity */}
+      <main className="game-main">
+
+        {/* YOUR SECTION - Bottom of screen, most prominent */}
+        <section className="your-section">
+          <div className="section-label">Your Cards</div>
+
+          {/* Your hand */}
+          <div className="your-hand-container">
+            <Hand
+              cards={hand}
+              onCardClick={handleCardSelect}
+              selectedCardId={selectedCard?.id}
+              isMyTurn={isMyTurn}
+            />
           </div>
 
-          <div className="header-letters">
-            {['G', 'U', 'B'].map(letter => (
-              <span
-                key={letter}
-                className={`letter-token ${drawnLetters.includes(letter) ? 'drawn' : ''}`}
-              >
-                {letter}
-              </span>
-            ))}
-          </div>
-
-          <div className="header-deck">
-            <span className="deck-count">{deck?.cardsRemaining ?? '?'}</span>
-            <span className="deck-label">in deck</span>
-          </div>
-        </header>
-
-        {/* Opponents */}
-        {opponents.length > 0 && (
-          <section className="opponents-section">
-            {opponents.map(opp => (
-              <PlayerBoard
-                key={opp.id}
-                player={opp}
-                isCurrentTurn={opp.isCurrentTurn}
-                isTargetable={targetingMode === 'player'}
-                onPlayerClick={() => handlePlayerTargetClick(opp.id)}
-                onGubClick={(gub) => handleGubClick(gub, opp.id)}
-                targetingGubs={targetingMode === 'opponent-gub'}
-                selectedGubInstanceId={
-                  selectedTarget?.playerId === opp.id ? selectedTarget.gubInstanceId : null
-                }
-              />
-            ))}
-          </section>
-        )}
-
-        {/* My Play Area */}
-        <section className="my-area">
-          <div className="my-area-header">
-            <span className="my-area-label">Your Play Area</span>
-            <span className="my-score">{myPlayerData?.score ?? 0} Gubs</span>
-          </div>
-          <PlayArea
-            playArea={myPlayerData?.playArea || playArea}
-            onGubClick={(gub) => handleGubClick(gub, playerId)}
-            targetingMode={targetingMode === 'own-gub'}
-            selectedGubInstanceId={
-              selectedTarget?.playerId === playerId ? selectedTarget.gubInstanceId : null
-            }
-          />
-        </section>
-
-        {/* Action Bar */}
-        <div className="action-bar">
-          <button
-            className={`btn-action draw-btn ${!isMyTurn || hasDrawnCard ? 'disabled' : 'active'}`}
-            onClick={handleDrawCard}
-            disabled={!isMyTurn || hasDrawnCard}
-          >
-            {hasDrawnCard ? 'Card Drawn ✓' : 'Draw Card'}
-          </button>
-
-          {selectedCard ? (
-            <div className="play-card-group">
-              <div className="selected-info">
-                <span className="selected-name">{selectedCard.name}</span>
-                {targetingMode && !selectedTarget && (
-                  <span className="target-hint">
-                    {targetingMode === 'own-gub' && '← click your free Gub'}
-                    {targetingMode === 'opponent-gub' && '← click opponent Gub'}
-                    {targetingMode === 'player' && '← click opponent'}
-                  </span>
-                )}
-              </div>
+          {/* Action buttons */}
+          {isMyTurn && (
+            <div className="action-buttons">
+              {selectedCard && !targetingMode && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handlePlayCard()}
+                >
+                  Play {selectedCard.name}
+                </button>
+              )}
+              {targetingMode && (
+                <div className="targeting-hint">
+                  {targetingMode === 'Barricade'
+                    ? `Select one of YOUR Gubs to protect with ${selectedCard?.name}`
+                    : `Select a target for ${selectedCard?.name}`}
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      setSelectedCard(null);
+                      setTargetingMode(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
               <button
-                className={`btn-action play-btn ${targetingMode && !selectedTarget ? 'disabled' : 'active'}`}
-                onClick={handlePlayCard}
-                disabled={!!targetingMode && !selectedTarget}
+                className="btn btn-secondary"
+                onClick={handleEndTurn}
+                disabled={hand.length > 8}
               >
-                Play
-              </button>
-              <button
-                className="btn-action cancel-btn"
-                onClick={() => {
-                  setSelectedCard(null);
-                  setTargetingMode(null);
-                  setSelectedTarget(null);
-                }}
-              >
-                Cancel
+                End Turn
               </button>
             </div>
-          ) : (
-            needsDiscard && (
-              <span className="discard-warning">
-                Select a card to discard (hand {'>'} 8)
-              </span>
-            )
           )}
 
-          <button
-            className={`btn-action end-turn-btn ${!isMyTurn || needsDiscard ? 'disabled' : 'active'}`}
-            onClick={handleEndTurn}
-            disabled={!isMyTurn || needsDiscard}
-          >
-            End Turn
-          </button>
+          {/* Your play area */}
+          <div className="your-play-area">
+            <PlayArea
+              playArea={myPlayerData?.playArea || playArea}
+              playerName="You"
+              score={myPlayerData?.score || 0}
+              isCurrentPlayer={true}
+              onGubClick={targetingMode === 'Barricade' ? (gubData) => handleTargetSelect({
+                playerId: playerId,
+                gubId: gubData.card.id
+              }) : undefined}
+              isTargetable={targetingMode === 'Barricade'}
+            />
+          </div>
+        </section>
+
+        {/* DIVIDER */}
+        <div className="section-divider">
+          <Deck
+            cardsRemaining={deck?.cardsRemaining || 0}
+            drawnLetters={drawnLetters || []}
+            discardPile={[]}
+            onDrawCard={handleDrawCard}
+            canDraw={isMyTurn && !hasDrawnThisTurn}
+          />
         </div>
 
-        {/* My Hand */}
-        <Hand
-          cards={hand}
-          onCardClick={handleCardClick}
-          selectedCardId={selectedCard?.instanceId}
-          isMyTurn={isMyTurn || needsDiscard}
-        />
-
-        {/* Game Log */}
-        {gameLog.length > 0 && (
-          <div className="game-log">
-            {gameLog.slice(-5).reverse().map((msg, i) => (
-              <div key={i} className={`log-entry ${i === 0 ? 'latest' : ''}`}>
-                {msg}
-              </div>
+        {/* OPPONENTS SECTION - Top of screen */}
+        <section className="opponents-section">
+          <div className="section-label">Opponents</div>
+          <div className="opponents-grid">
+            {opponents.map(opponent => (
+              <PlayerBoard
+                key={opponent.id}
+                player={opponent}
+                isCurrentTurn={currentPlayer?.id === opponent.id}
+                onGubSelect={targetingMode && targetingMode !== 'Barricade' ? (gubData) => handleTargetSelect({
+                  playerId: opponent.id,
+                  gubId: gubData.card.id
+                }) : undefined}
+                isTargetable={targetingMode && targetingMode !== 'Barricade' && ['Spear', 'Lure', 'Super Lure', 'Smahl Thief', 'Trap'].includes(selectedCard?.name || selectedCard?.type)}
+              />
             ))}
           </div>
-        )}
-      </div>
-    </>
+        </section>
+      </main>
+    </div>
   );
 }
 

@@ -111,8 +111,8 @@ class Game {
   /**
    * Start the game
    * - Create and shuffle deck
-   * - Deal 1 starting Gub to each player
-   * - Deal 3 additional cards to each player
+   * - Deal 1 starting Gub (regular, not Elder) to each player's play area
+   * - Deal 3 non-Event cards to each player's hand
    * - Set first player's turn
    */
   startGame() {
@@ -127,40 +127,28 @@ class Game {
     // Initialize and shuffle deck
     this.deck = new Deck();
 
-    // Deal 1 starting Gub to each player
+    // Deal 1 starting Gub to each player (regular Gub, not Esteemed Elder)
     this.players.forEach(player => {
-      const startingGub = this.deck.drawCard();
-      if (startingGub && startingGub.type === 'Gub') {
+      const startingGub = this.findAndRemoveRegularGub();
+      if (startingGub) {
         player.playGub(startingGub);
-      } else {
-        // If first card isn't a Gub, put it back and draw until we get one
-        if (startingGub) this.deck.cards.push(startingGub);
-
-        let gubFound = false;
-        while (!gubFound && this.deck.cards.length > 0) {
-          const card = this.deck.drawCard();
-          if (card && card.type === 'Gub') {
-            player.playGub(card);
-            gubFound = true;
-          } else if (card) {
-            this.deck.cards.push(card);
-          }
-        }
       }
     });
 
     // Reshuffle deck after dealing starting Gubs
     this.deck.cards = this.deck.shuffle(this.deck.cards);
 
-    // Deal 3 cards to each player
-    for (let i = 0; i < 3; i++) {
-      this.players.forEach(player => {
-        const card = this.deck.drawCard();
+    // Deal 3 non-Event cards to each player's hand
+    this.players.forEach(player => {
+      let cardsDealt = 0;
+      while (cardsDealt < 3 && this.deck.cards.length > 0) {
+        const card = this.drawNonEventCard();
         if (card) {
           player.addCardToHand(card);
+          cardsDealt++;
         }
-      });
-    }
+      }
+    });
 
     // Set first player's turn
     this.players[0].isCurrentTurn = true;
@@ -168,6 +156,49 @@ class Game {
     // Update game status
     this.status = 'active';
     this.startedAt = new Date();
+  }
+
+  /**
+   * Find and remove a regular Gub (not Esteemed Elder) from the deck
+   * @returns {Card|null}
+   */
+  findAndRemoveRegularGub() {
+    const gubIndex = this.deck.cards.findIndex(
+      card => card.type === 'Gub' && card.subtype !== 'Elder'
+    );
+
+    if (gubIndex === -1) {
+      return null;
+    }
+
+    const [gub] = this.deck.cards.splice(gubIndex, 1);
+    return gub;
+  }
+
+  /**
+   * Draw a non-Event card from the deck
+   * If an Event card is drawn, put it back and try again
+   * @returns {Card|null}
+   */
+  drawNonEventCard() {
+    let attempts = 0;
+    const maxAttempts = this.deck.cards.length;
+
+    while (attempts < maxAttempts) {
+      const card = this.deck.drawCard();
+      if (!card) return null;
+
+      if (card.type !== 'Event') {
+        return card;
+      }
+
+      // Put Event card back at a random position and try again
+      const randomIndex = Math.floor(Math.random() * this.deck.cards.length);
+      this.deck.cards.splice(randomIndex, 0, card);
+      attempts++;
+    }
+
+    return null;
   }
 
   /**

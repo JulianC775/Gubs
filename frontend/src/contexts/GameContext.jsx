@@ -17,7 +17,9 @@ const gameReducer = (state, action) => {
     case 'GAME_STATE_UPDATE':
       return {
         ...state,
-        ...action.payload
+        ...action.payload,
+        // Map backend's "id" to our "gameId"
+        gameId: action.payload.id || action.payload.gameId || state.gameId
       };
 
     case 'PLAYER_JOINED':
@@ -46,7 +48,9 @@ const gameReducer = (state, action) => {
       return {
         ...state,
         status: 'active',
-        ...action.payload
+        ...action.payload,
+        // Map backend's "id" to our "gameId"
+        gameId: action.payload.id || action.payload.gameId || state.gameId
       };
 
     case 'TURN_CHANGED':
