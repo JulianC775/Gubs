@@ -109,7 +109,8 @@ export const PlayerProvider = ({ children }) => {
     };
 
     const handleCardDrawn = (data) => {
-      if (data.playerId === state.playerId && !data.isEvent) {
+      // card:drawn is sent directly to the drawing player's socket, no playerId check needed
+      if (!data.isEvent) {
         dispatch({ type: 'CARD_DRAWN', payload: data });
       }
     };

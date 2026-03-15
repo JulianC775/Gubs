@@ -1,0 +1,109 @@
+.player-board {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 12px;
+  min-width: 180px;
+  max-width: 280px;
+  flex: 1;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.player-board.active-turn {
+  border-color: var(--sunshine, #ffd778);
+  background: rgba(255, 215, 120, 0.1);
+  box-shadow: 0 0 16px rgba(255, 215, 120, 0.3);
+}
+
+.player-board.targetable {
+  cursor: pointer;
+  border-color: rgba(255, 100, 100, 0.6);
+  box-shadow: 0 0 12px rgba(255, 100, 100, 0.4);
+  animation: pulse-target-board 1.5s ease-in-out infinite;
+}
+
+.player-board.targetable:hover {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgba(255, 100, 100, 0.8);
+}
+
+@keyframes pulse-target-board {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 100, 100, 0.4); }
+  50% { box-shadow: 0 0 24px rgba(255, 100, 100, 0.7); }
+}
+
+.player-board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.player-board-name {
+  font-weight: 700;
+  color: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.active-turn-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--sunshine, #ffd778);
+  color: #333;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.dc-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(255, 100, 100, 0.7);
+  color: white;
+  border-radius: 8px;
+}
+
+.player-board-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.player-stat {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.player-stat small {
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 2px;
+}
+
+.player-hand-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.mini-card-back {
+  width: 14px;
+  height: 20px;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.extra-cards {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 2px;
+}

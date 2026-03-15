@@ -30,12 +30,12 @@ function Hand({ cards = [], onCardClick, selectedCardId = null, isMyTurn = false
       </div>
       <div className="hand-cards">
         {cards.map((card, index) => (
-          <div key={card.id || index} className="hand-card-wrapper">
+          <div key={card.instanceId || card.id || index} className="hand-card-wrapper">
             <Card
               card={card}
               onClick={onCardClick}
               isPlayable={isMyTurn}
-              isSelected={card.id === selectedCardId}
+              isSelected={card.instanceId === selectedCardId}
             />
           </div>
         ))}

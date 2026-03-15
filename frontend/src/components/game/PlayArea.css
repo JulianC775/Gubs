@@ -1,0 +1,121 @@
+.play-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px;
+  min-height: 80px;
+}
+
+.play-area.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.play-area-empty-msg {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.gub-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gub-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.gub-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Gub Token */
+.gub-token {
+  width: 70px;
+  height: 80px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  cursor: default;
+  transition: all 0.2s ease;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.gub-token.free {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border: 2px solid #16a34a;
+  color: white;
+}
+
+.gub-token.protected {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  border: 2px solid #2563eb;
+  color: white;
+}
+
+.gub-token.trapped {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  border: 2px dashed #b91c1c;
+  color: white;
+  opacity: 0.8;
+}
+
+.gub-token.targetable {
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(255, 220, 50, 0.6);
+  border-color: #ffd700 !important;
+  animation: pulse-target 1.5s ease-in-out infinite;
+}
+
+.gub-token.targetable:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(255, 220, 50, 0.8);
+}
+
+.gub-token.selected {
+  transform: translateY(-6px) scale(1.08);
+  box-shadow: 0 8px 20px rgba(255, 220, 50, 0.9);
+  border-color: #ffd700 !important;
+  border-width: 3px !important;
+}
+
+@keyframes pulse-target {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 220, 50, 0.6); }
+  50% { box-shadow: 0 0 20px rgba(255, 220, 50, 0.9); }
+}
+
+.gub-token-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.gub-token-badges {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.gub-badge {
+  font-size: 12px;
+  line-height: 1;
+}
