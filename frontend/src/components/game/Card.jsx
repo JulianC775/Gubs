@@ -27,7 +27,7 @@ function Card({ card, onClick, isPlayable = false, isSelected = false, faceDown 
   };
 
   const handleClick = () => {
-    if (onClick && (isPlayable || isSelected)) {
+    if (onClick) {
       onClick(card);
     }
   };
