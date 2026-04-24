@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayer, clearSession } from '../contexts/PlayerContext';
 import { useSocket } from '../contexts/SocketContext';
 import Hand from '../components/game/Hand';
 import PlayArea from '../components/game/PlayArea';
@@ -47,6 +47,12 @@ function Game() {
   // Handle socket events
   useEffect(() => {
     const handleError = (data) => {
+      // If game not found, clear session and redirect
+      if (data.message?.includes('not found') || data.message?.includes('Game not found')) {
+        clearSession();
+        navigate('/');
+        return;
+      }
       setError(data.message);
       setTimeout(() => setError(null), 3000);
     };
@@ -72,14 +78,23 @@ function Game() {
       off('turn:changed', handleTurnChanged);
       off('event:triggered', handleEventTriggered);
     };
-  }, [on, off]);
+  }, [on, off, navigate]);
 
   // Rejoin game on mount if we have player info
   useEffect(() => {
     if (gameId && playerId) {
       emit('game:rejoin', { gameId, playerId });
+    } else if (!gameId || !playerId) {
+      // No valid session data - redirect to home
+      // Wait a moment to allow context to initialize from sessionStorage
+      const timer = setTimeout(() => {
+        if (!gameId || !playerId) {
+          navigate('/');
+        }
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [gameId, playerId, emit]);
+  }, [gameId, playerId, emit, navigate]);
 
   // Draw card handler
   const handleDrawCard = useCallback(() => {
@@ -150,6 +165,7 @@ function Game() {
 
   // Leave game handler
   const handleLeaveGame = useCallback(() => {
+    clearSession();
     navigate('/');
   }, [navigate]);
 

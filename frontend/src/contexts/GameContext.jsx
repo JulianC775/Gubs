@@ -76,22 +76,77 @@ const gameReducer = (state, action) => {
   }
 };
 
-const initialGameState = {
-  gameId: null,
-  roomCode: null,
-  status: 'lobby',
-  players: [],
-  currentPlayerIndex: 0,
-  turnNumber: 1,
-  drawnLetters: [],
-  deck: { cardsRemaining: 0 },
-  winner: null,
-  scores: []
+const SESSION_KEY = 'gubs_session';
+
+const getInitialGameState = () => {
+  const baseState = {
+    gameId: null,
+    roomCode: null,
+    status: 'lobby',
+    players: [],
+    currentPlayerIndex: 0,
+    turnNumber: 1,
+    drawnLetters: [],
+    deck: { cardsRemaining: 0 },
+    winner: null,
+    scores: []
+  };
+
+  // Restore from sessionStorage if available
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) {
+      const { gameId, roomCode } = JSON.parse(saved);
+      return {
+        ...baseState,
+        gameId: gameId || null,
+        roomCode: roomCode || null
+      };
+    }
+  } catch (e) {
+    console.warn('Failed to restore game session:', e);
+  }
+
+  return baseState;
+};
+
+const initialGameState = getInitialGameState();
+
+// Helper to save game session data
+const saveGameSession = (gameData) => {
+  try {
+    const existing = sessionStorage.getItem(SESSION_KEY);
+    const current = existing ? JSON.parse(existing) : {};
+    const updated = {
+      ...current,
+      gameId: gameData.gameId || gameData.id,
+      roomCode: gameData.roomCode
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.warn('Failed to save game session:', e);
+  }
 };
 
 export const GameProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(gameReducer, initialGameState);
+  const [state, rawDispatch] = useReducer(gameReducer, initialGameState);
   const { on, off } = useSocket();
+
+  // Wrap dispatch to save session data when game state updates
+  const dispatch = (action) => {
+    rawDispatch(action);
+
+    // Save to sessionStorage when game state changes
+    if (action.type === 'GAME_STATE_UPDATE' || action.type === 'GAME_STARTED') {
+      const payload = action.payload;
+      if (payload && (payload.id || payload.gameId || payload.roomCode)) {
+        saveGameSession({
+          gameId: payload.id || payload.gameId,
+          roomCode: payload.roomCode
+        });
+      }
+    }
+  };
 
   useEffect(() => {
     // Listen for game state updates

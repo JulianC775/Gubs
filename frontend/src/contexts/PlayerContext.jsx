@@ -81,19 +81,68 @@ const playerReducer = (state, action) => {
   }
 };
 
-const initialPlayerState = {
-  playerId: null,
-  playerName: '',
-  hand: [],
-  playArea: {
-    gubs: [],
-    protectedGubs: [],
-    trappedGubs: [],
-    activeEffects: []
-  },
-  score: 0,
-  isReady: false,
-  isHost: false
+const SESSION_KEY = 'gubs_session';
+
+const getInitialPlayerState = () => {
+  const baseState = {
+    playerId: null,
+    playerName: '',
+    hand: [],
+    playArea: {
+      gubs: [],
+      protectedGubs: [],
+      trappedGubs: [],
+      activeEffects: []
+    },
+    score: 0,
+    isReady: false,
+    isHost: false
+  };
+
+  // Restore from sessionStorage if available
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) {
+      const { playerId, playerName, isHost } = JSON.parse(saved);
+      return {
+        ...baseState,
+        playerId: playerId || null,
+        playerName: playerName || '',
+        isHost: isHost || false
+      };
+    }
+  } catch (e) {
+    console.warn('Failed to restore player session:', e);
+  }
+
+  return baseState;
+};
+
+const initialPlayerState = getInitialPlayerState();
+
+// Helper to save session data
+const saveSession = (playerData, gameData = null) => {
+  try {
+    const existing = sessionStorage.getItem(SESSION_KEY);
+    const current = existing ? JSON.parse(existing) : {};
+    const updated = {
+      ...current,
+      ...playerData,
+      ...(gameData || {})
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.warn('Failed to save player session:', e);
+  }
+};
+
+// Helper to clear session data
+export const clearSession = () => {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch (e) {
+    console.warn('Failed to clear session:', e);
+  }
 };
 
 export const PlayerProvider = ({ children }) => {
@@ -125,6 +174,12 @@ export const PlayerProvider = ({ children }) => {
 
   const setPlayer = (playerData) => {
     dispatch({ type: 'SET_PLAYER', payload: playerData });
+    // Save to sessionStorage for page refresh recovery
+    saveSession({
+      playerId: playerData.playerId,
+      playerName: playerData.playerName,
+      isHost: playerData.isHost
+    });
   };
 
   const setReady = (isReady) => {

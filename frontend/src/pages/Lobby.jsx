@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import { useGame } from '../contexts/GameContext';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayer, clearSession } from '../contexts/PlayerContext';
 import ForestBackground from '../components/ForestBackground';
 import ForestParticles from '../components/ForestParticles';
 import ForestDecorations from '../components/ForestDecorations';
@@ -133,6 +133,7 @@ function Lobby() {
   };
 
   const handleLeave = () => {
+    clearSession();
     navigate('/');
   };
 
