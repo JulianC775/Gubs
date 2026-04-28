@@ -95,7 +95,7 @@ function Lobby() {
   useEffect(() => {
     const handleGameStarted = (data) => {
       console.log('Game started:', data);
-      navigate(`/game/${data.game.id}`);
+      navigate(`/game/${data.game.roomCode}`);
     };
 
     on('game:started', handleGameStarted);

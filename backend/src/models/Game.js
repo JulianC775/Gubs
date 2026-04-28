@@ -432,6 +432,7 @@ class Game {
       deck: this.deck ? this.deck.toJSON() : null,
       drawnLetters: this.drawnLetters,
       winner: this.winner ? {
+        id: this.winner.winner.id,
         name: this.winner.winner.name,
         score: this.winner.winner.calculateScore(),
         tiebreaker: this.winner.tiebreaker
@@ -462,6 +463,7 @@ class Game {
       turnNumber: this.turnNumber,
       drawnLetters: this.drawnLetters,
       winner: this.winner ? {
+        id: this.winner.winner.id,
         name: this.winner.winner.name,
         score: this.winner.winner.calculateScore(),
         tiebreaker: this.winner.tiebreaker

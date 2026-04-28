@@ -19,7 +19,9 @@ const gameReducer = (state, action) => {
         ...state,
         ...action.payload,
         // Map backend's "id" to our "gameId"
-        gameId: action.payload.id || action.payload.gameId || state.gameId
+        gameId: action.payload.id || action.payload.gameId || state.gameId,
+        // Preserve scores set by GAME_ENDED since gameState:update doesn't include them
+        scores: action.payload.scores || state.scores
       };
 
     case 'PLAYER_JOINED':
@@ -65,7 +67,7 @@ const gameReducer = (state, action) => {
         ...state,
         status: 'ended',
         winner: action.payload.winner,
-        scores: action.payload.scores
+        scores: action.payload.scores || []
       };
 
     case 'RESET_GAME':

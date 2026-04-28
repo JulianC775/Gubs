@@ -108,7 +108,7 @@ function Game() {
   const handleCardSelect = useCallback((card) => {
     if (!isMyTurn) return;
 
-    if (selectedCard?.id === card.id) {
+    if (selectedCard?.instanceId === card.instanceId) {
       setSelectedCard(null);
       setTargetingMode(null);
     } else {
@@ -133,7 +133,7 @@ function Game() {
     emit('game:playCard', {
       gameId,
       playerId,
-      cardId: selectedCard.id,
+      cardId: selectedCard.instanceId,
       target
     });
 
@@ -231,7 +231,7 @@ function Game() {
             <Hand
               cards={hand}
               onCardClick={handleCardSelect}
-              selectedCardId={selectedCard?.id}
+              selectedCardId={selectedCard?.instanceId}
               isMyTurn={isMyTurn}
             />
           </div>

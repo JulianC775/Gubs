@@ -281,13 +281,21 @@ function initializeSocketHandlers(io) {
 
         // If game ended, broadcast game over
         if (result.gameEnded) {
+          const winnerInfo = game.winner ? {
+            id: game.winner.winner.id,
+            name: game.winner.winner.name,
+            score: game.winner.winner.calculateScore(),
+            tiebreaker: game.winner.tiebreaker
+          } : null;
+
           io.to(game.roomCode).emit('game:ended', {
-            winner: game.winner,
-            finalScores: game.players.map(p => ({
+            winner: winnerInfo,
+            scores: game.players.map(p => ({
               playerId: p.id,
-              playerName: p.name,
+              name: p.name,
               score: p.calculateScore(),
-              gubs: p.playArea.gubs.length
+              gubCount: p.playArea.gubs.length + p.playArea.protectedGubs.length,
+              hasEsteemedElder: p.hasEsteemedElder()
             }))
           });
         }
@@ -415,6 +423,7 @@ function initializeSocketHandlers(io) {
           previousPlayerId: playerId,
           currentPlayerId: nextPlayer.id,
           currentPlayerName: nextPlayer.name,
+          currentPlayerIndex: game.currentPlayerIndex,
           turnNumber: game.turnNumber
         });
 
