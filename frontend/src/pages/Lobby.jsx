@@ -14,7 +14,7 @@ function Lobby() {
   const { roomCode } = useParams();
   const navigate = useNavigate();
   const { connected, emit, on, off } = useSocket();
-  const { gameId, players, status, dispatch } = useGame();
+  const { gameId, players, dispatch } = useGame();
   const { playerId, playerName, isReady, isHost, setPlayer, setReady } = usePlayer();
 
   const [loading, setLoading] = useState(true);
@@ -82,8 +82,8 @@ function Lobby() {
     if (playerId && gameId) {
       console.log('Host registering socket with room:', roomCode);
       emit('game:join', { roomCode, playerName });
-      // Don't wait for response - we already have the game state
-      setLoading(false);
+      // Defer so we're not calling setState synchronously inside an effect
+      setTimeout(() => setLoading(false), 0);
     } else {
       // Joining player - need to wait for game:joined response
       console.log('Attempting to join room:', roomCode, 'as', playerName);

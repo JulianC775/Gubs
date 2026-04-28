@@ -26,7 +26,7 @@ function Game() {
     winner,
     scores
   } = useGame();
-  const { playerId, playerName, hand, playArea } = usePlayer();
+  const { playerId, hand, playArea } = usePlayer();
 
   const [selectedCard, setSelectedCard] = useState(null);
   const [targetingMode, setTargetingMode] = useState(null);

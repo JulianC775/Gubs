@@ -5,7 +5,7 @@ function PlayerList({ players, hostId, currentPlayerId }) {
     <div className="player-list">
       <h3>Players ({players.length})</h3>
       <div className="players">
-        {players.map((player, index) => (
+        {players.map((player) => (
           <div
             key={player.id}
             className={`player-item ${player.id === currentPlayerId ? 'current-player' : ''}`}
