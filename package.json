@@ -9,6 +9,7 @@
     "build": "npm run build --prefix frontend"
   },
   "devDependencies": {
+    "baseline-browser-mapping": "^2.10.24",
     "concurrently": "^8.2.2"
   }
 }

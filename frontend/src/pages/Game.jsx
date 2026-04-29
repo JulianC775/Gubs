@@ -18,7 +18,7 @@ import PlayerBoard from '../components/game/PlayerBoard';
 import Card from '../components/game/Card';
 import Deck from '../components/game/Deck';
 import GameEndScreen from '../components/game/GameEndScreen';
-import ForestBackground from '../components/ForestBackground';
+import WoodBackground from '../components/WoodBackground';
 import './Game.css';
 
 const OPPONENT_GUB_CARDS = ['Spear', 'Lure', 'Super Lure', 'Smahl Thief'];
@@ -419,7 +419,7 @@ function Game() {
   if (status === 'ended') {
     return (
       <>
-        <ForestBackground />
+        <WoodBackground />
         <GameEndScreen
           winner={winner}
           scores={scores}
@@ -433,7 +433,7 @@ function Game() {
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="game-page">
-      <ForestBackground />
+      <WoodBackground />
 
       {error && <div className="error-toast">{error}</div>}
 

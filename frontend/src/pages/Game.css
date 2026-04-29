@@ -64,10 +64,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 18px;
-  background: rgba(15, 30, 25, 0.55);
-  backdrop-filter: blur(10px);
+  background: rgba(10, 18, 14, 0.78);
+  backdrop-filter: blur(12px);
   border-radius: 24px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
   margin-bottom: 12px;
 }
 
@@ -80,13 +80,16 @@
 .room-code {
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255,255,255,0.5);
-  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 1px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 3px 10px;
+  border-radius: 6px;
 }
 
 .turn-info {
   font-size: 12px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .current-turn-indicator { font-size: 14px; font-weight: 600; }
