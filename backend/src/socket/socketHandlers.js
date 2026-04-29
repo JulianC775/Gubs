@@ -392,6 +392,49 @@ function initializeSocketHandlers(io) {
       }
     });
 
+    // Discard a card from hand (required when hand > 8 at end of turn)
+    socket.on('game:discardCard', ({ gameId, playerId, cardId }) => {
+      try {
+        const game = games.get(gameId);
+        if (!game) {
+          socket.emit('error', { message: 'Game not found' });
+          return;
+        }
+
+        const player = game.getPlayer(playerId);
+        if (!player) {
+          socket.emit('error', { message: 'Player not found' });
+          return;
+        }
+
+        const currentPlayer = game.getCurrentPlayer();
+        if (!currentPlayer || currentPlayer.id !== playerId) {
+          socket.emit('error', { message: 'Not your turn' });
+          return;
+        }
+
+        const card = player.removeCardFromHand(cardId);
+        if (!card) {
+          socket.emit('error', { message: 'Card not found in hand' });
+          return;
+        }
+
+        game.deck.addToDiscard(card);
+
+        socket.emit('hand:update', {
+          playerId: player.id,
+          hand: player.hand.map(c => c.toJSON())
+        });
+
+        io.to(game.roomCode).emit('gameState:update', game.toJSON());
+
+        console.log(`Player ${player.name} discarded ${card.name}`);
+      } catch (error) {
+        console.error('Error discarding card:', error);
+        socket.emit('error', { message: error.message });
+      }
+    });
+
     // End turn
     socket.on('game:endTurn', ({ gameId, playerId }) => {
       try {

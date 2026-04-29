@@ -293,6 +293,109 @@
   max-width: 400px;
 }
 
+/* Discard mode */
+.your-section.discard-mode {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.3);
+}
+
+.discard-banner {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 12px;
+  animation: pulse 1.5s infinite;
+}
+
+.hand.discard-mode .hand-label {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.hand-card-wrapper.discardable:hover {
+  transform: translateY(-4px);
+}
+
+.hand-card-wrapper.discardable .card {
+  border-color: #f87171 !important;
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+}
+
+.hand-card-wrapper.discardable .card:hover {
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* Lightning action selection */
+.lightning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 20px;
+  background: rgba(251, 146, 60, 0.15);
+  border: 2px solid #fb923c;
+  border-radius: 8px;
+}
+
+.targeting-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 100%;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+}
+
+/* Player-targetable board (Lightning) */
+.player-board.player-targetable {
+  border: 2px solid #fb923c;
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.4);
+  transition: all 0.2s ease;
+}
+
+.player-board.player-targetable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(251, 146, 60, 0.6);
+}
+
+.player-board.selected {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+}
+
+.target-indicator {
+  font-size: 12px;
+  color: #fb923c;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.selected-indicator {
+  font-size: 12px;
+  color: #f59e0b;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .game-page {

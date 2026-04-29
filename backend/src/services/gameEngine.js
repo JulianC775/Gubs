@@ -65,10 +65,13 @@ function validateBarricadePlay(game, player, target) {
     return { valid: false, error: 'Must target a Gub to protect' };
   }
 
-  // Check if the Gub exists in player's free gubs
-  const gub = player.playArea.gubs.find(g => g.id === target.gubId);
+  const gub = player.playArea.gubs.find(g => g.id === target.gubId || g.instanceId === target.gubId);
   if (!gub) {
     return { valid: false, error: 'Can only protect your own unprotected Gubs' };
+  }
+
+  if (gub.subtype === 'Elder') {
+    return { valid: false, error: 'Esteemed Elder cannot be protected by Barricades' };
   }
 
   return { valid: true };
@@ -117,6 +120,10 @@ function validateWeaponPlay(game, player, card, target) {
       const gubLocation = targetPlayer.findGub(target.gubId);
       if (!gubLocation) {
         return { valid: false, error: 'Target Gub not found' };
+      }
+      // Elder is immune to everything except Lightning
+      if (gubLocation.gub.subtype === 'Elder' && gubLocation.location !== 'protectedGubs') {
+        return { valid: false, error: 'Esteemed Elder is immune to Spear' };
       }
       return { valid: true };
     }
@@ -167,9 +174,8 @@ function validateThiefPlay(game, player, target) {
     return { valid: false, error: 'Cannot steal protected Gubs' };
   }
 
-  // Cannot steal Esteemed Elder
   if (gubLocation.gub.subtype === 'Elder') {
-    return { valid: false, error: 'Cannot steal Esteemed Elder' };
+    return { valid: false, error: 'Esteemed Elder is immune to Smahl Thief' };
   }
 
   return { valid: true };
@@ -243,9 +249,13 @@ function validateTrapPlay(game, player, target) {
   }
 
   // Can only trap free (unprotected) Gubs
-  const gub = targetPlayer.playArea.gubs.find(g => g.id === target.gubId);
+  const gub = targetPlayer.playArea.gubs.find(g => g.id === target.gubId || g.instanceId === target.gubId);
   if (!gub) {
     return { valid: false, error: 'Can only trap unprotected Gubs' };
+  }
+
+  if (gub.subtype === 'Elder') {
+    return { valid: false, error: 'Esteemed Elder is immune to Traps' };
   }
 
   return { valid: true };
@@ -869,15 +879,23 @@ function executeFlashFlood(game, drawingPlayer) {
   const affectedPlayers = [];
 
   game.players.forEach(player => {
+    // Remove free (unprotected) Gubs
     const freeGubs = [...player.playArea.gubs];
     freeGubs.forEach(gub => {
       player.removeGub(gub.id);
       game.deck.addToDiscard(gub);
-      affectedPlayers.push({
-        playerId: player.id,
-        playerName: player.name,
-        discardedGub: gub.toJSON()
-      });
+      affectedPlayers.push({ playerId: player.id, playerName: player.name, discardedGub: gub.toJSON() });
+    });
+
+    // Remove trapped Gubs (unprotected, just under a trap)
+    const trappedGubs = [...player.playArea.trappedGubs];
+    trappedGubs.forEach(gub => {
+      if (gub.trapCard) game.deck.addToDiscard(gub.trapCard);
+      player.playArea.trappedGubs.splice(player.playArea.trappedGubs.indexOf(gub), 1);
+      gub.isTrapped = false;
+      gub.trapCard = null;
+      game.deck.addToDiscard(gub);
+      affectedPlayers.push({ playerId: player.id, playerName: player.name, discardedGub: gub.toJSON() });
     });
   });
 

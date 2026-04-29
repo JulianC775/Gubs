@@ -80,7 +80,7 @@ class Player {
     }
 
     // Find the target Gub in free gubs
-    const gubIndex = this.playArea.gubs.findIndex(gub => gub.id === targetGubId);
+    const gubIndex = this.playArea.gubs.findIndex(gub => gub.id === targetGubId || gub.instanceId === targetGubId);
 
     if (gubIndex === -1) {
       return false; // Gub not found or already protected
@@ -104,16 +104,15 @@ class Player {
    * @returns {Object|null} - { gub, location } or null
    */
   findGub(gubId) {
-    // Check free gubs
-    let gub = this.playArea.gubs.find(g => g.id === gubId);
+    const match = g => g.id === gubId || g.instanceId === gubId;
+
+    let gub = this.playArea.gubs.find(match);
     if (gub) return { gub, location: 'gubs' };
 
-    // Check protected gubs
-    gub = this.playArea.protectedGubs.find(g => g.id === gubId);
+    gub = this.playArea.protectedGubs.find(match);
     if (gub) return { gub, location: 'protectedGubs' };
 
-    // Check trapped gubs
-    gub = this.playArea.trappedGubs.find(g => g.id === gubId);
+    gub = this.playArea.trappedGubs.find(match);
     if (gub) return { gub, location: 'trappedGubs' };
 
     return null;
@@ -127,7 +126,7 @@ class Player {
    */
   trapGub(gubId, trapCard) {
     // Find Gub in free gubs only (can't trap protected Gubs)
-    const gubIndex = this.playArea.gubs.findIndex(gub => gub.id === gubId);
+    const gubIndex = this.playArea.gubs.findIndex(gub => gub.id === gubId || gub.instanceId === gubId);
 
     if (gubIndex === -1) {
       return false;
@@ -171,7 +170,7 @@ class Player {
    * @returns {Card|null} - The destroyed barricade or null
    */
   destroyBarricade(gubId) {
-    const gubIndex = this.playArea.protectedGubs.findIndex(gub => gub.id === gubId);
+    const gubIndex = this.playArea.protectedGubs.findIndex(gub => gub.id === gubId || gub.instanceId === gubId);
 
     if (gubIndex === -1) {
       return null;
@@ -196,15 +195,17 @@ class Player {
    * @returns {Card|null} - The removed Gub or null
    */
   removeGub(gubId) {
+    const match = gub => gub.id === gubId || gub.instanceId === gubId;
+
     // Check free gubs
-    let gubIndex = this.playArea.gubs.findIndex(gub => gub.id === gubId);
+    let gubIndex = this.playArea.gubs.findIndex(match);
     if (gubIndex !== -1) {
       const [gub] = this.playArea.gubs.splice(gubIndex, 1);
       return gub;
     }
 
     // Check trapped gubs
-    gubIndex = this.playArea.trappedGubs.findIndex(gub => gub.id === gubId);
+    gubIndex = this.playArea.trappedGubs.findIndex(match);
     if (gubIndex !== -1) {
       const [gub] = this.playArea.trappedGubs.splice(gubIndex, 1);
       gub.isTrapped = false;

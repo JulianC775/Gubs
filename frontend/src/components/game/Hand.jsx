@@ -2,16 +2,7 @@ import PropTypes from 'prop-types';
 import Card from './Card';
 import './Hand.css';
 
-/**
- * Hand Component
- * Displays all cards in a player's hand
- * @param {Object} props
- * @param {Array} props.cards - Array of card objects
- * @param {Function} props.onCardClick - Handler when a card is clicked
- * @param {string} props.selectedCardId - ID of currently selected card
- * @param {boolean} props.isMyTurn - Whether it's the player's turn
- */
-function Hand({ cards = [], onCardClick, selectedCardId = null, isMyTurn = false }) {
+function Hand({ cards = [], onCardClick, selectedCardId = null, isMyTurn = false, discardMode = false }) {
   if (!cards || cards.length === 0) {
     return (
       <div className="hand empty">
@@ -21,21 +12,20 @@ function Hand({ cards = [], onCardClick, selectedCardId = null, isMyTurn = false
   }
 
   return (
-    <div className="hand">
+    <div className={`hand ${discardMode ? 'discard-mode' : ''}`}>
       <div className="hand-label">
-        Your Hand ({cards.length} {cards.length === 1 ? 'card' : 'cards'})
-        {cards.length > 8 && (
-          <span className="hand-warning"> - Must discard to 8 cards!</span>
-        )}
+        {discardMode
+          ? `Hand (${cards.length}) — click to discard`
+          : `Your Hand (${cards.length} ${cards.length === 1 ? 'card' : 'cards'})`}
       </div>
       <div className="hand-cards">
         {cards.map((card, index) => (
-          <div key={card.instanceId || card.id || index} className="hand-card-wrapper">
+          <div key={card.instanceId || card.id || index} className={`hand-card-wrapper ${discardMode ? 'discardable' : ''}`}>
             <Card
               card={card}
               onClick={onCardClick}
-              isPlayable={isMyTurn}
-              isSelected={card.instanceId === selectedCardId}
+              isPlayable={discardMode ? true : isMyTurn}
+              isSelected={!discardMode && card.instanceId === selectedCardId}
             />
           </div>
         ))}
@@ -45,16 +35,11 @@ function Hand({ cards = [], onCardClick, selectedCardId = null, isMyTurn = false
 }
 
 Hand.propTypes = {
-  cards: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      type: PropTypes.string.isRequired
-    })
-  ),
+  cards: PropTypes.array,
   onCardClick: PropTypes.func,
   selectedCardId: PropTypes.string,
-  isMyTurn: PropTypes.bool
+  isMyTurn: PropTypes.bool,
+  discardMode: PropTypes.bool
 };
 
 export default Hand;
