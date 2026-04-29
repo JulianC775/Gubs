@@ -18,6 +18,8 @@ class Game {
     this.endedAt = null;
     this.maxPlayers = 6;
     this.minPlayers = 2;
+    this.pendingEvent = null;       // { card, drawingPlayerId } while waiting for Flop Boat window
+    this.pendingEventTimer = null;  // setTimeout handle
   }
 
   /**

@@ -222,7 +222,15 @@ function initializeSocketHandlers(io) {
           return;
         }
 
-        // Draw the card
+        // Blindfold effect — skip this draw
+        if (currentPlayer.skipNextDraw) {
+          currentPlayer.skipNextDraw = false;
+          socket.emit('error', { message: 'Your draw was skipped by Blindfold!' });
+          return;
+        }
+
+        // Draw the card — reset consecutive skip counter
+        currentPlayer.consecutiveSkips = 0;
         const result = game.playerDrawCard(playerId);
 
         // Send the card to the player who drew it
@@ -242,33 +250,41 @@ function initializeSocketHandlers(io) {
           cardsRemaining: game.deck.getCardsRemaining()
         });
 
-        // If it's an Event card (not letter), execute the event effect
+        // If it's a non-letter Event card, open a 5s Flop Boat interrupt window
         if (result.isEvent && !result.isLetter) {
-          const eventResult = executeEventCard(game, result.card, playerId);
+          game.pendingEvent = { card: result.card, drawingPlayerId: playerId };
 
-          // Broadcast the event effect to all players
-          io.to(game.roomCode).emit('event:triggered', {
+          io.to(game.roomCode).emit('event:pending', {
             eventCard: result.card.toJSON(),
             drawingPlayerId: playerId,
             drawingPlayerName: currentPlayer.name,
-            result: eventResult
+            windowMs: 5000
           });
 
-          // Add event card to discard pile (it doesn't go to hand)
-          game.deck.addToDiscard(result.card);
+          // Execute after 5 seconds if not intercepted by Flop Boat
+          game.pendingEventTimer = setTimeout(() => {
+            if (!game.pendingEvent) return; // already handled
+            const { card: eventCard, drawingPlayerId: drawerId } = game.pendingEvent;
+            game.pendingEvent = null;
+            game.pendingEventTimer = null;
 
-          // Update hands for affected players (e.g., Gargok Plague)
-          game.players.forEach(p => {
-            const playerSocket = Array.from(io.sockets.sockets.values()).find(
-              s => s.data?.playerId === p.id
-            );
-            if (playerSocket) {
-              playerSocket.emit('hand:update', {
-                playerId: p.id,
-                hand: p.hand.map(card => card.toJSON())
-              });
-            }
-          });
+            const eventResult = executeEventCard(game, eventCard, drawerId);
+            game.deck.addToDiscard(eventCard);
+
+            io.to(game.roomCode).emit('event:triggered', {
+              eventCard: eventCard.toJSON(),
+              drawingPlayerId: drawerId,
+              drawingPlayerName: currentPlayer.name,
+              result: eventResult
+            });
+
+            game.players.forEach(p => {
+              const ps = Array.from(io.sockets.sockets.values()).find(s => s.data?.playerId === p.id);
+              if (ps) ps.emit('hand:update', { playerId: p.id, hand: p.hand.map(c => c.toJSON()) });
+            });
+
+            io.to(game.roomCode).emit('gameState:update', game.toJSON());
+          }, 5000);
         }
 
         // If letter was drawn, broadcast letter info
@@ -359,13 +375,24 @@ function initializeSocketHandlers(io) {
           game.deck.addToDiscard(card);
         }
 
-        // Broadcast card played with effect details
+        // Private effects (peeked cards for Omen Beetle, revealed hand for Scout)
+        if (result.effects?.type === 'omen-beetle-played') {
+          socket.emit('card:privateResult', { type: 'peek', cards: result.effects.peekedCards });
+        }
+        if (result.effects?.type === 'scout-played') {
+          socket.emit('card:privateResult', { type: 'scout', targetPlayerId: result.effects.targetPlayerId, hand: result.effects.revealedHand });
+        }
+
+        // Broadcast card played with effect details (strip private data)
+        const publicEffects = result.effects?.type === 'omen-beetle-played' || result.effects?.type === 'scout-played'
+          ? { ...result.effects, peekedCards: undefined, revealedHand: undefined }
+          : result.effects;
         io.to(game.roomCode).emit('card:played', {
           playerId,
           playerName: player.name,
           card: card.toJSON(),
           target,
-          effect: result.effects,
+          effect: publicEffects,
           message: result.message
         });
 
@@ -388,6 +415,69 @@ function initializeSocketHandlers(io) {
         console.log(`Player ${player.name} played ${card.name}: ${result.message}`);
       } catch (error) {
         console.error('Error playing card:', error);
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    // Flop Boat — redirect pending Event back into the deck
+    socket.on('game:flopBoat', ({ gameId, playerId, cardId }) => {
+      try {
+        const game = games.get(gameId);
+        if (!game) { socket.emit('error', { message: 'Game not found' }); return; }
+
+        if (!game.pendingEvent) {
+          socket.emit('error', { message: 'No pending Event to redirect' });
+          return;
+        }
+
+        const player = game.getPlayer(playerId);
+        if (!player) { socket.emit('error', { message: 'Player not found' }); return; }
+
+        const flopBoatCard = player.removeCardFromHand(cardId);
+        if (!flopBoatCard) { socket.emit('error', { message: 'Flop Boat not in hand' }); return; }
+
+        // Cancel the pending timer
+        if (game.pendingEventTimer) {
+          clearTimeout(game.pendingEventTimer);
+          game.pendingEventTimer = null;
+        }
+
+        const { card: eventCard } = game.pendingEvent;
+        game.pendingEvent = null;
+
+        // Shuffle event back into deck
+        const insertAt = Math.floor(Math.random() * (game.deck.cards.length + 1));
+        game.deck.cards.splice(insertAt, 0, eventCard);
+
+        // Discard Flop Boat
+        game.deck.addToDiscard(flopBoatCard);
+
+        io.to(game.roomCode).emit('event:redirected', {
+          eventCard: eventCard.toJSON(),
+          playerId,
+          playerName: player.name
+        });
+
+        // Update Flop Boat player's hand
+        socket.emit('hand:update', { playerId, hand: player.hand.map(c => c.toJSON()) });
+        io.to(game.roomCode).emit('gameState:update', game.toJSON());
+
+        console.log(`${player.name} used Flop Boat to redirect ${eventCard.name}`);
+      } catch (error) {
+        console.error('Error with Flop Boat:', error);
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    // Get discard pile contents (for Age Old Cure targeting)
+    socket.on('game:getDiscardPile', ({ gameId }) => {
+      try {
+        const game = games.get(gameId);
+        if (!game) { socket.emit('error', { message: 'Game not found' }); return; }
+        socket.emit('game:discardPile', {
+          cards: game.deck.discardPile.map(c => c.toJSON())
+        });
+      } catch (error) {
         socket.emit('error', { message: error.message });
       }
     });
@@ -436,7 +526,7 @@ function initializeSocketHandlers(io) {
     });
 
     // End turn
-    socket.on('game:endTurn', ({ gameId, playerId }) => {
+    socket.on('game:endTurn', ({ gameId, playerId, didDraw = false }) => {
       try {
         const game = games.get(gameId);
         if (!game) {
@@ -454,6 +544,17 @@ function initializeSocketHandlers(io) {
         if (currentPlayer.hand.length > 8) {
           socket.emit('error', { message: 'You must discard down to 8 cards before ending your turn' });
           return;
+        }
+
+        // Consecutive skip enforcement
+        if (!didDraw) {
+          currentPlayer.consecutiveSkips = (currentPlayer.consecutiveSkips || 0) + 1;
+          if (currentPlayer.consecutiveSkips > 1) {
+            socket.emit('error', { message: 'You cannot skip drawing two turns in a row' });
+            return;
+          }
+        } else {
+          currentPlayer.consecutiveSkips = 0;
         }
 
         // Move to next turn

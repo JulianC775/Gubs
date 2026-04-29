@@ -3,6 +3,20 @@
  * Handles card effect execution and validation
  */
 
+const Card = require('../models/Card');
+const cardsData = require('../data/cards.json');
+const cardDefinitions = cardsData.cards || cardsData;
+
+// Build a lookup map: card name → card definition
+const cardDefsByName = {};
+cardDefinitions.forEach(def => { cardDefsByName[def.name] = def; });
+
+// Cards Cricket Song can legally mimic (Hazard, Tool, Interrupt per rules)
+const CRICKET_SONG_VALID_CARDS = [
+  'Spear', 'Lure', 'Super Lure', 'Lightning',
+  'Smahl Thief', 'Age Old Cure', 'Retreat', 'Flop Boat'
+];
+
 /**
  * Validate if a card play is legal
  * @param {Game} game - The game instance
@@ -11,15 +25,15 @@
  * @param {Object} target - Target object { playerId, gubId, cardId }
  * @returns {Object} - { valid: boolean, error: string }
  */
-function validateCardPlay(game, playerId, cardId, target = {}) {
+function validateCardPlay(game, playerId, cardId, target = {}, resolvedCard = null) {
   const player = game.getPlayer(playerId);
 
   if (!player) {
     return { valid: false, error: 'Player not found' };
   }
 
-  // Check if player has the card (check both id and instanceId)
-  const card = player.hand.find(c => c.id === cardId || c.instanceId === cardId);
+  // resolvedCard is passed when validating Cricket Song's mimicked card
+  const card = resolvedCard || player.hand.find(c => c.id === cardId || c.instanceId === cardId);
   if (!card) {
     return { valid: false, error: 'Card not in hand' };
   }
@@ -201,20 +215,9 @@ function validateTacticalPlay(game, player, card, target) {
     return { valid: true };
   }
 
-  if (card.name === 'Scout') {
-    if (!target.playerId) {
-      return { valid: false, error: 'Must target an opponent to scout' };
-    }
+  if (card.name === 'Scout') return validateTacticalPlayScout(game, player, target);
 
-    const targetPlayer = game.getPlayer(target.playerId);
-    if (!targetPlayer || targetPlayer.id === player.id) {
-      return { valid: false, error: 'Must target an opponent' };
-    }
-
-    return { valid: true };
-  }
-
-  // Other tactical cards (Blindfold, Feather) - implement as needed
+  // Other tactical cards don't require targets
   return { valid: true };
 }
 
@@ -265,20 +268,34 @@ function validateTrapPlay(game, player, target) {
  * Validate Hazard (Lightning, Cyclone) play
  */
 function validateHazardPlay(game, player, card, target) {
-  if (card.name === 'Lightning') {
+  if (card.name === 'Lightning' || card.name === 'Cyclone') {
     if (!target.playerId) {
-      return { valid: false, error: 'Must target a player' };
+      return { valid: false, error: `Must target a player for ${card.name}` };
     }
-
     const targetPlayer = game.getPlayer(target.playerId);
     if (!targetPlayer) {
       return { valid: false, error: 'Target player not found' };
     }
-
+    if (targetPlayer.id === player.id) {
+      return { valid: false, error: 'Cannot target yourself' };
+    }
     return { valid: true };
   }
 
-  // Cyclone - implement as needed
+  return { valid: true };
+}
+
+/**
+ * Validate Tactical (Scout etc.) play
+ */
+function validateTacticalPlayScout(game, player, target) {
+  if (!target.playerId) {
+    return { valid: false, error: 'Must target an opponent to scout' };
+  }
+  const targetPlayer = game.getPlayer(target.playerId);
+  if (!targetPlayer || targetPlayer.id === player.id) {
+    return { valid: false, error: 'Must target an opponent' };
+  }
   return { valid: true };
 }
 
@@ -295,9 +312,17 @@ function validateInterruptPlay(game, player, card, target) {
   }
 
   if (card.name === 'Cricket Song') {
-    // Cricket Song is a wild card - requires the player to specify what it represents
     if (!target.asCard) {
       return { valid: false, error: 'Must specify what Cricket Song represents' };
+    }
+    if (!CRICKET_SONG_VALID_CARDS.includes(target.asCard)) {
+      return { valid: false, error: `Cricket Song cannot represent ${target.asCard}` };
+    }
+    // Validate as if it were the mimicked card
+    const def = cardDefsByName[target.asCard];
+    if (def) {
+      const syntheticCard = new Card(def);
+      return validateCardPlay(game, player.id, syntheticCard.id, target, syntheticCard);
     }
     return { valid: true };
   }
@@ -426,15 +451,21 @@ function playWeapon(game, player, card, target) {
 
     game.deck.addToDiscard(destroyedBarricade);
 
+    const ringTransfer = checkAndApplyRing(player, targetPlayer, target.gubId);
+    const msg = ringTransfer
+      ? `${player.name} destroyed ${targetPlayer.name}'s ${destroyedBarricade.name} and claimed the freed Gub with ${ringTransfer.usedRing.name}`
+      : `${player.name} destroyed ${targetPlayer.name}'s ${destroyedBarricade.name}`;
+
     return {
       success: true,
-      message: `${player.name} destroyed ${targetPlayer.name}'s ${destroyedBarricade.name}`,
+      message: msg,
       effects: {
         type: 'barricade-destroyed',
         playerId: player.id,
         targetPlayerId: targetPlayer.id,
         destroyedCard: destroyedBarricade.toJSON(),
-        targetGubId: target.gubId
+        targetGubId: target.gubId,
+        ringTransfer
       }
     };
   }
@@ -463,15 +494,22 @@ function playSpear(game, player, card, targetPlayer, target) {
 
     game.deck.addToDiscard(destroyedBarricade);
 
+    // Check if attacker has a Ring — transfer freed Gub if so
+    const ringTransfer = checkAndApplyRing(player, targetPlayer, target.gubId);
+    const msg = ringTransfer
+      ? `${player.name} used Spear to destroy ${targetPlayer.name}'s ${destroyedBarricade.name} and claimed the freed Gub with ${ringTransfer.usedRing.name}`
+      : `${player.name} used Spear to destroy ${targetPlayer.name}'s ${destroyedBarricade.name}`;
+
     return {
       success: true,
-      message: `${player.name} used Spear to destroy ${targetPlayer.name}'s ${destroyedBarricade.name}`,
+      message: msg,
       effects: {
         type: 'barricade-destroyed',
         playerId: player.id,
         targetPlayerId: targetPlayer.id,
         destroyedCard: destroyedBarricade.toJSON(),
-        targetGubId: target.gubId
+        targetGubId: target.gubId,
+        ringTransfer
       }
     };
   }
@@ -598,17 +636,11 @@ function playAgeOldCure(game, player, card, target) {
  * Play Tactical cards (Retreat, Scout, etc.)
  */
 function playTactical(game, player, card, target) {
-  if (card.name === 'Retreat') {
-    return playRetreat(game, player, card);
-  }
+  if (card.name === 'Retreat') return playRetreat(game, player, card);
 
   if (card.name === 'Scout') {
     const targetPlayer = game.getPlayer(target.playerId);
-
-    if (!targetPlayer) {
-      return { success: false, message: 'Target player not found' };
-    }
-
+    if (!targetPlayer) return { success: false, message: 'Target player not found' };
     return {
       success: true,
       message: `${player.name} scouted ${targetPlayer.name}'s hand`,
@@ -621,7 +653,34 @@ function playTactical(game, player, card, target) {
     };
   }
 
-  // Other tactical cards - implement as needed
+  if (card.name === 'Feather') {
+    // Draw 1 extra card (skips events)
+    let drawn = null;
+    let attempts = 0;
+    while (!drawn && attempts < game.deck.cards.length) {
+      const c = game.deck.drawCard();
+      if (c && c.type !== 'Event') { player.addCardToHand(c); drawn = c; }
+      else if (c) { game.deck.cards.push(c); game.deck.shuffle(); }
+      attempts++;
+    }
+    return {
+      success: true,
+      message: `${player.name} used Feather to draw an extra card`,
+      effects: { type: 'feather-played', playerId: player.id }
+    };
+  }
+
+  if (card.name === 'Blindfold') {
+    // Skip the next player's draw phase — mark them
+    const nextIndex = (game.currentPlayerIndex + 1) % game.players.length;
+    game.players[nextIndex].skipNextDraw = true;
+    return {
+      success: true,
+      message: `${player.name} used Blindfold — ${game.players[nextIndex].name} must skip their next draw`,
+      effects: { type: 'blindfold-played', playerId: player.id, targetPlayerId: game.players[nextIndex].id }
+    };
+  }
+
   return { success: true, message: `${player.name} played ${card.name}` };
 }
 
@@ -651,22 +710,89 @@ function playRetreat(game, player, card) {
  */
 function playMagic(game, player, card, target) {
   if (card.name.includes('Ring')) {
-    // Add ring to active effects
     player.playArea.activeEffects.push(card);
-
     return {
       success: true,
-      message: `${player.name} played ${card.name} (active effect)`,
-      effects: {
-        type: 'magic-played',
-        playerId: player.id,
-        card: card.toJSON()
-      }
+      message: `${player.name} played ${card.name} — will claim the next Gub freed from an opponent`,
+      effects: { type: 'ring-played', playerId: player.id, card: card.toJSON() }
     };
   }
 
-  // Other magic cards - implement as needed
+  if (card.name === 'Haki Flute') {
+    // Each opponent discards 1 random card from hand
+    const affected = [];
+    game.players.forEach(p => {
+      if (p.id !== player.id && p.hand.length > 0) {
+        const idx = Math.floor(Math.random() * p.hand.length);
+        const [discarded] = p.hand.splice(idx, 1);
+        game.deck.addToDiscard(discarded);
+        affected.push({ playerId: p.id, playerName: p.name, discarded: discarded.toJSON() });
+      }
+    });
+    return {
+      success: true,
+      message: `${player.name} played Haki Flute — opponents each discarded 1 card`,
+      effects: { type: 'haki-flute-played', playerId: player.id, affected }
+    };
+  }
+
+  if (card.name === 'Omen Beetle') {
+    // Peek at top 3 cards of deck — return to sender only
+    const peeked = game.deck.cards.slice(-3).map(c => c.toJSON());
+    return {
+      success: true,
+      message: `${player.name} used Omen Beetle to peek at the top 3 cards`,
+      effects: { type: 'omen-beetle-played', playerId: player.id, peekedCards: peeked }
+    };
+  }
+
+  if (card.name === 'Dangerous Alchemy') {
+    // Discard your weakest free Gub (if any), draw 2 non-event cards
+    if (player.playArea.gubs.length > 0) {
+      const sacrificed = player.playArea.gubs.shift();
+      game.deck.addToDiscard(sacrificed);
+      let drawn = 0;
+      while (drawn < 2 && game.deck.cards.length > 0) {
+        const c = game.deck.drawCard();
+        if (c && c.type !== 'Event') { player.addCardToHand(c); drawn++; }
+        else if (c) { game.deck.cards.push(c); }
+      }
+      return {
+        success: true,
+        message: `${player.name} used Dangerous Alchemy — sacrificed ${sacrificed.name} and drew ${drawn} cards`,
+        effects: { type: 'dangerous-alchemy-played', playerId: player.id, sacrificed: sacrificed.toJSON() }
+      };
+    }
+    return { success: false, message: 'Dangerous Alchemy requires at least one free Gub to sacrifice' };
+  }
+
   return { success: true, message: `${player.name} played ${card.name}` };
+}
+
+/**
+ * Check if the attacking player has a Ring active and, if so,
+ * transfer the just-freed Gub from targetPlayer to attackingPlayer.
+ * Returns a transfer description or null if no ring was used.
+ */
+function checkAndApplyRing(attackingPlayer, targetPlayer, gubId) {
+  const ringIndex = attackingPlayer.playArea.activeEffects.findIndex(
+    e => e.name && e.name.includes('Ring')
+  );
+  if (ringIndex === -1) return null;
+
+  // Find the freed Gub in targetPlayer's free gubs
+  const gubIndex = targetPlayer.playArea.gubs.findIndex(
+    g => g.id === gubId || g.instanceId === gubId
+  );
+  if (gubIndex === -1) return null;
+
+  const [gub] = targetPlayer.playArea.gubs.splice(gubIndex, 1);
+  attackingPlayer.playArea.gubs.push(gub);
+
+  // Consume the Ring
+  const [usedRing] = attackingPlayer.playArea.activeEffects.splice(ringIndex, 1);
+
+  return { transferredGub: gub.toJSON(), usedRing: usedRing.toJSON() };
 }
 
 /**
@@ -702,11 +828,29 @@ function playTrap(game, player, card, target) {
  * Play a Hazard card (Lightning, Cyclone)
  */
 function playHazard(game, player, card, target) {
-  if (card.name === 'Lightning') {
-    return playLightning(game, player, card, target);
+  if (card.name === 'Lightning') return playLightning(game, player, card, target);
+
+  if (card.name === 'Cyclone') {
+    const targetPlayer = game.getPlayer(target.playerId);
+    if (!targetPlayer) return { success: false, message: 'Target player not found' };
+
+    // Strip all barricades — Gubs become free but stay with owner
+    const freed = [];
+    [...targetPlayer.playArea.protectedGubs].forEach(gub => {
+      const barricade = targetPlayer.destroyBarricade(gub.id);
+      if (barricade) {
+        game.deck.addToDiscard(barricade);
+        freed.push(gub.toJSON());
+      }
+    });
+
+    return {
+      success: true,
+      message: `${player.name} used Cyclone to strip all of ${targetPlayer.name}'s barricades (${freed.length} freed)`,
+      effects: { type: 'cyclone-played', playerId: player.id, targetPlayerId: targetPlayer.id, freed }
+    };
   }
 
-  // Cyclone - implement as needed
   return { success: true, message: `${player.name} played ${card.name}` };
 }
 
@@ -818,17 +962,16 @@ function playInterrupt(game, player, card, target) {
   }
 
   if (card.name === 'Cricket Song') {
-    // Cricket Song is handled by mimicking another card
-    return {
-      success: true,
-      message: `${player.name} played Cricket Song as ${target.asCard}`,
-      effects: {
-        type: 'wild-card-played',
-        playerId: player.id,
-        card: card.toJSON(),
-        representingCard: target.asCard
-      }
-    };
+    const def = cardDefsByName[target.asCard];
+    if (def) {
+      const syntheticCard = new Card(def);
+      const result = executeCardEffect(game, syntheticCard, player.id, target);
+      return {
+        ...result,
+        message: `${player.name} played Cricket Song as ${target.asCard}: ${result.message}`
+      };
+    }
+    return { success: true, message: `${player.name} played Cricket Song as ${target.asCard}` };
   }
 
   return { success: true, message: `${player.name} played ${card.name}` };
@@ -862,8 +1005,45 @@ function executeEventCard(game, card, drawingPlayerId) {
         isLetter: true
       };
 
+    case 'Traveling Merchant': {
+      // Each player draws 1 non-event card
+      const drawn = [];
+      game.players.forEach(p => {
+        let attempts = 0;
+        while (attempts < game.deck.cards.length) {
+          const c = game.deck.drawCard();
+          if (!c) break;
+          if (c.type !== 'Event') { p.addCardToHand(c); drawn.push({ playerId: p.id, card: c.toJSON() }); break; }
+          game.deck.cards.push(c);
+          attempts++;
+        }
+      });
+      return {
+        success: true,
+        message: 'Traveling Merchant! Each player draws 1 card.',
+        effects: { type: 'traveling-merchant', drawn }
+      };
+    }
+
+    case 'Rumor of Wasps': {
+      // Each player (except drawer) discards 1 random card
+      const discarded = [];
+      game.players.forEach(p => {
+        if (p.id !== drawingPlayerId && p.hand.length > 0) {
+          const idx = Math.floor(Math.random() * p.hand.length);
+          const [card2] = p.hand.splice(idx, 1);
+          game.deck.addToDiscard(card2);
+          discarded.push({ playerId: p.id, playerName: p.name, card: card2.toJSON() });
+        }
+      });
+      return {
+        success: true,
+        message: 'Rumor of Wasps! Each opponent discards 1 card.',
+        effects: { type: 'rumor-of-wasps', discarded }
+      };
+    }
+
     default:
-      // Unknown event card - just acknowledge it
       return {
         success: true,
         message: `${drawingPlayer.name} drew ${card.name}`,

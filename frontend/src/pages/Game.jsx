@@ -11,8 +11,19 @@ import GameEndScreen from '../components/game/GameEndScreen';
 import ForestBackground from '../components/ForestBackground';
 import './Game.css';
 
-// Cards that require clicking an opponent's Gub
 const OPPONENT_GUB_CARDS = ['Spear', 'Lure', 'Super Lure', 'Smahl Thief'];
+
+// What Cricket Song can mimic, grouped for the picker UI
+const CRICKET_SONG_OPTIONS = [
+  { name: 'Spear',      label: 'Spear — destroy barricade or kill Gub',  targeting: 'opponent-gub' },
+  { name: 'Lure',       label: 'Lure — remove one barricade',             targeting: 'opponent-gub' },
+  { name: 'Super Lure', label: 'Super Lure — remove one barricade',       targeting: 'opponent-gub' },
+  { name: 'Smahl Thief',label: 'Smahl Thief — steal a Gub',               targeting: 'opponent-gub' },
+  { name: 'Lightning',  label: 'Lightning — destroy Elder or hand',       targeting: 'Lightning'     },
+  { name: 'Age Old Cure',label: 'Age Old Cure — rescue from discard',     targeting: null            },
+  { name: 'Retreat',    label: 'Retreat — retrieve all your cards',       targeting: null            },
+  { name: 'Flop Boat',  label: 'Flop Boat — redirect next Event',         targeting: null            },
+];
 
 function Game() {
   const { roomCode } = useParams();
@@ -36,6 +47,13 @@ function Game() {
   const [targetingMode, setTargetingMode] = useState(null);
   // After clicking an opponent in Lightning mode, hold their id for action selection
   const [pendingLightningTarget, setPendingLightningTarget] = useState(null);
+  // When Cricket Song is selected, show picker; stores the chosen card name after pick
+  const [cricketSongMode, setCricketSongMode] = useState(false);
+  const [cricketSongChoice, setCricketSongChoice] = useState(null);
+  const [ageOldCureMode, setAgeOldCureMode] = useState(false);
+  const [discardPileCards, setDiscardPileCards] = useState([]);
+  const [pendingEventInterrupt, setPendingEventInterrupt] = useState(null);
+  const [privateResult, setPrivateResult] = useState(null); // Omen Beetle / Scout reveals
   const [error, setError] = useState(null);
   const [hasDrawnThisTurn, setHasDrawnThisTurn] = useState(false);
   const [activeEvent, setActiveEvent] = useState(null);
@@ -49,11 +67,10 @@ function Game() {
   const discardMode = isMyTurn && hand.length > 8;
   const discardCount = Math.max(0, hand.length - 8);
 
-  // When discardMode is active, selection state is effectively cleared in the UI
-  // without needing to call setState (avoids sync setState in effect)
   const activeSelectedCard = discardMode ? null : selectedCard;
   const activeTargetingMode = discardMode ? null : targetingMode;
   const activePendingLightningTarget = discardMode ? null : pendingLightningTarget;
+  const activeCricketSongMode = discardMode ? false : cricketSongMode;
 
   // Socket event listeners
   useEffect(() => {
@@ -72,6 +89,29 @@ function Game() {
       setSelectedCard(null);
       setTargetingMode(null);
       setPendingLightningTarget(null);
+      setCricketSongMode(false);
+      setCricketSongChoice(null);
+      setAgeOldCureMode(false);
+      setDiscardPileCards([]);
+    };
+
+    const handleDiscardPile = (data) => {
+      setDiscardPileCards(data.cards || []);
+    };
+
+    const handleEventPending = (data) => {
+      setPendingEventInterrupt(data);
+      // Auto-dismiss when window closes
+      setTimeout(() => setPendingEventInterrupt(null), data.windowMs + 500);
+    };
+
+    const handleEventRedirected = () => {
+      setPendingEventInterrupt(null);
+    };
+
+    const handlePrivateResult = (data) => {
+      setPrivateResult(data);
+      setTimeout(() => setPrivateResult(null), 8000);
     };
 
     const handleEventTriggered = (data) => {
@@ -82,11 +122,19 @@ function Game() {
     on('error', handleError);
     on('turn:changed', handleTurnChanged);
     on('event:triggered', handleEventTriggered);
+    on('game:discardPile', handleDiscardPile);
+    on('event:pending', handleEventPending);
+    on('event:redirected', handleEventRedirected);
+    on('card:privateResult', handlePrivateResult);
 
     return () => {
       off('error', handleError);
       off('turn:changed', handleTurnChanged);
       off('event:triggered', handleEventTriggered);
+      off('game:discardPile', handleDiscardPile);
+      off('event:pending', handleEventPending);
+      off('event:redirected', handleEventRedirected);
+      off('card:privateResult', handlePrivateResult);
     };
   }, [on, off, navigate]);
 
@@ -125,37 +173,78 @@ function Game() {
 
     setSelectedCard(card);
     setPendingLightningTarget(null);
+    setCricketSongChoice(null);
 
-    if (card.type === 'Barricade') {
+    if (card.name === 'Cricket Song') {
+      setCricketSongMode(true);
+      setAgeOldCureMode(false);
+      setTargetingMode(null);
+    } else if (card.name === 'Age Old Cure') {
+      setCricketSongMode(false);
+      setAgeOldCureMode(true);
+      setTargetingMode(null);
+      emit('game:getDiscardPile', { gameId });
+    } else if (card.type === 'Barricade') {
+      setCricketSongMode(false);
       setTargetingMode('Barricade');
     } else if (card.type === 'Trap' || OPPONENT_GUB_CARDS.includes(card.name)) {
+      setCricketSongMode(false);
       setTargetingMode('opponent-gub');
     } else if (card.name === 'Lightning') {
+      setCricketSongMode(false);
       setTargetingMode('Lightning');
+    } else if (card.name === 'Cyclone' || card.name === 'Scout') {
+      setCricketSongMode(false);
+      setTargetingMode('player-target');
     } else {
+      setCricketSongMode(false);
       setTargetingMode(null);
     }
-  }, [isMyTurn, discardMode, selectedCard]);
+  }, [isMyTurn, discardMode, selectedCard, emit, gameId]);
 
   const handlePlayCard = useCallback((target = null) => {
     if (!selectedCard || !isMyTurn) return;
+
+    // Merge asCard into target when playing Cricket Song
+    const finalTarget = cricketSongChoice
+      ? { ...(target || {}), asCard: cricketSongChoice }
+      : target;
 
     emit('game:playCard', {
       gameId,
       playerId,
       cardId: selectedCard.instanceId,
-      target
+      target: finalTarget
     });
 
     setSelectedCard(null);
     setTargetingMode(null);
     setPendingLightningTarget(null);
-  }, [selectedCard, isMyTurn, gameId, playerId, emit]);
+    setCricketSongMode(false);
+    setCricketSongChoice(null);
+  }, [selectedCard, isMyTurn, gameId, playerId, emit, cricketSongChoice]);
 
   const cancelSelection = useCallback(() => {
     setSelectedCard(null);
     setTargetingMode(null);
     setPendingLightningTarget(null);
+    setCricketSongMode(false);
+    setCricketSongChoice(null);
+    setAgeOldCureMode(false);
+    setDiscardPileCards([]);
+  }, []);
+
+  const handleCricketSongPick = useCallback((option) => {
+    setCricketSongMode(false);
+    setCricketSongChoice(option.name);
+    if (option.targeting === 'Lightning') {
+      setTargetingMode('Lightning');
+    } else if (option.targeting === 'opponent-gub') {
+      setTargetingMode('opponent-gub');
+    } else {
+      // No target needed — play immediately
+      setTargetingMode(null);
+    }
   }, []);
 
   // Called when clicking an opponent's board (for Lightning targeting)
@@ -178,8 +267,8 @@ function Game() {
 
   const handleEndTurn = useCallback(() => {
     if (!isMyTurn || discardMode) return;
-    emit('game:endTurn', { gameId, playerId });
-  }, [isMyTurn, discardMode, gameId, playerId, emit]);
+    emit('game:endTurn', { gameId, playerId, didDraw: hasDrawnThisTurn });
+  }, [isMyTurn, discardMode, gameId, playerId, emit, hasDrawnThisTurn]);
 
   const handleLeaveGame = useCallback(() => {
     clearSession();
@@ -197,6 +286,8 @@ function Game() {
         return activePendingLightningTarget
           ? 'Choose Lightning action:'
           : 'Select an opponent to strike with Lightning';
+      case 'player-target':
+        return `Select a target player for ${activeSelectedCard?.name}`;
       default:
         return null;
     }
@@ -221,6 +312,61 @@ function Game() {
       <ForestBackground />
 
       {error && <div className="error-toast">{error}</div>}
+
+      {/* Flop Boat interrupt window */}
+      {pendingEventInterrupt && hand.some(c => c.name === 'Flop Boat') && (
+        <div className="flop-boat-prompt">
+          <div className="flop-boat-event">
+            Event drawn: <strong>{pendingEventInterrupt.eventCard?.name}</strong>
+          </div>
+          <div className="flop-boat-message">You have Flop Boat! Redirect this event?</div>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              const flopBoat = hand.find(c => c.name === 'Flop Boat');
+              if (flopBoat) {
+                emit('game:flopBoat', { gameId, playerId, cardId: flopBoat.instanceId });
+                setPendingEventInterrupt(null);
+              }
+            }}
+          >
+            Play Flop Boat
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setPendingEventInterrupt(null)}>
+            Let it happen
+          </button>
+        </div>
+      )}
+
+      {privateResult && (
+        <div className="private-result-overlay">
+          <button className="close-overlay" onClick={() => setPrivateResult(null)}>✕</button>
+          {privateResult.type === 'peek' && (
+            <>
+              <div className="overlay-title">Omen Beetle — Top 3 cards in deck:</div>
+              <div className="overlay-cards">
+                {privateResult.cards.map((c, i) => (
+                  <div key={i} className="overlay-card-item">
+                    <strong>{c.name}</strong> <span className="card-type-badge">{c.type}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {privateResult.type === 'scout' && (
+            <>
+              <div className="overlay-title">Scout — Opponent&apos;s hand:</div>
+              <div className="overlay-cards">
+                {privateResult.hand.map((c, i) => (
+                  <div key={i} className="overlay-card-item">
+                    <strong>{c.name}</strong> <span className="card-type-badge">{c.type}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {activeEvent && (
         <div className="event-notification">
@@ -267,12 +413,59 @@ function Game() {
             />
           </div>
 
-          {isMyTurn && !discardMode && (
+          {/* Cricket Song picker modal */}
+          {activeCricketSongMode && (
+            <div className="cricket-song-picker">
+              <div className="picker-title">Cricket Song — Choose what it represents:</div>
+              <div className="picker-options">
+                {CRICKET_SONG_OPTIONS.map(opt => (
+                  <button
+                    key={opt.name}
+                    className="btn btn-cricket-option"
+                    onClick={() => handleCricketSongPick(opt)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={cancelSelection}>Cancel</button>
+            </div>
+          )}
+
+          {/* Age Old Cure — pick from discard pile */}
+          {ageOldCureMode && isMyTurn && (
+            <div className="age-old-cure-picker">
+              <div className="picker-title">Age Old Cure — Choose a card to rescue from the discard pile:</div>
+              {discardPileCards.length === 0 ? (
+                <p className="picker-empty">Discard pile is empty</p>
+              ) : (
+                <div className="picker-options">
+                  {discardPileCards.map((card) => (
+                    <button
+                      key={card.instanceId || card.id}
+                      className="btn btn-age-old-cure-option"
+                      onClick={() => {
+                        handlePlayCard({ cardId: card.instanceId || card.id });
+                        setAgeOldCureMode(false);
+                      }}
+                    >
+                      {card.name} <span className="card-type-badge">{card.type}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button className="btn btn-secondary btn-sm" onClick={cancelSelection}>Cancel</button>
+            </div>
+          )}
+
+          {isMyTurn && !discardMode && !activeCricketSongMode && !ageOldCureMode && (
             <div className="action-buttons">
               {/* No target needed — play immediately */}
               {activeSelectedCard && !activeTargetingMode && (
                 <button className="btn btn-primary" onClick={() => handlePlayCard()}>
-                  Play {activeSelectedCard.name}
+                  {cricketSongChoice
+                    ? `Play Cricket Song as ${cricketSongChoice}`
+                    : `Play ${activeSelectedCard.name}`}
                 </button>
               )}
 
@@ -344,11 +537,18 @@ function Game() {
                 onGubSelect={activeTargetingMode === 'opponent-gub'
                   ? (gubData) => handleOpponentGubSelect(opponent, gubData)
                   : undefined}
-                onPlayerClick={activeTargetingMode === 'Lightning' && !activePendingLightningTarget
-                  ? () => handleOpponentClick(opponent.id)
-                  : undefined}
+                onPlayerClick={
+                  (activeTargetingMode === 'Lightning' && !activePendingLightningTarget)
+                    ? () => handleOpponentClick(opponent.id)
+                    : activeTargetingMode === 'player-target'
+                      ? () => handlePlayCard({ playerId: opponent.id })
+                      : undefined
+                }
                 isTargetable={activeTargetingMode === 'opponent-gub'}
-                isPlayerTargetable={activeTargetingMode === 'Lightning' && !activePendingLightningTarget}
+                isPlayerTargetable={
+                  (activeTargetingMode === 'Lightning' && !activePendingLightningTarget) ||
+                  activeTargetingMode === 'player-target'
+                }
                 isSelected={activePendingLightningTarget?.playerId === opponent.id}
               />
             ))}
