@@ -1,17 +1,52 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { useGame } from '../contexts/GameContext';
 import { usePlayer, clearSession } from '../contexts/PlayerContext';
 import { useSocket } from '../contexts/SocketContext';
 import Hand from '../components/game/Hand';
 import PlayArea from '../components/game/PlayArea';
 import PlayerBoard from '../components/game/PlayerBoard';
+import Card from '../components/game/Card';
 import Deck from '../components/game/Deck';
 import GameEndScreen from '../components/game/GameEndScreen';
 import ForestBackground from '../components/ForestBackground';
 import './Game.css';
 
 const OPPONENT_GUB_CARDS = ['Spear', 'Lure', 'Super Lure', 'Smahl Thief'];
+
+// Positions the drag overlay so the cursor sits at ~75% down the card —
+// card floats above the finger/cursor like picking up a real card from the table.
+function liftedCursorModifier({ activatorEvent, draggingNodeRect, transform }) {
+  if (!draggingNodeRect || !activatorEvent) return transform;
+  const cx = activatorEvent.clientX ?? activatorEvent.touches?.[0]?.clientX ?? 0;
+  const cy = activatorEvent.clientY ?? activatorEvent.touches?.[0]?.clientY ?? 0;
+  return {
+    ...transform,
+    x: transform.x + cx - draggingNodeRect.left - draggingNodeRect.width / 2,
+    y: transform.y + cy - draggingNodeRect.top - draggingNodeRect.height * 0.75,
+  };
+}
+
+function DroppableOwnArea({ children, className }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'own-play-area',
+    data: { type: 'own-play-area' },
+  });
+  return (
+    <div ref={setNodeRef} className={`${className}${isOver ? ' drop-over' : ''}`}>
+      {children}
+    </div>
+  );
+}
 
 // What Cricket Song can mimic, grouped for the picker UI
 const CRICKET_SONG_OPTIONS = [
@@ -57,6 +92,12 @@ function Game() {
   const [error, setError] = useState(null);
   const [hasDrawnThisTurn, setHasDrawnThisTurn] = useState(false);
   const [activeEvent, setActiveEvent] = useState(null);
+  const [draggedCard, setDraggedCard] = useState(null); // card being dragged (for DragOverlay)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
+  );
 
   const currentPlayer = players[currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === playerId;
@@ -275,6 +316,88 @@ function Game() {
     navigate('/');
   }, [navigate]);
 
+  const handleDragStart = useCallback(({ active }) => {
+    const card = active.data.current?.card;
+    if (card) setDraggedCard(card);
+  }, []);
+
+  const handleDragEnd = useCallback(({ active, over }) => {
+    setDraggedCard(null);
+    if (!active.data.current?.card) return;
+
+    const card = active.data.current.card;
+
+    // In discard mode any drop discards the card
+    if (discardMode) {
+      handleDiscardCard(card);
+      return;
+    }
+
+    if (!isMyTurn || !over) return;
+
+    const zone = over.data.current;
+    if (!zone) return;
+
+    // Helper — plays immediately with selectedCard set to dragged card
+    const playDirect = (target) => {
+      emit('game:playCard', {
+        gameId,
+        playerId,
+        cardId: card.instanceId,
+        target,
+      });
+      cancelSelection();
+    };
+
+    if (zone.type === 'own-play-area') {
+      // No-target cards: Gubs, Retreat, Feather, Haki Flute, Omen Beetle, Dangerous Alchemy
+      const noTargetCards = ['Retreat', 'Feather', 'Haki Flute', 'Omen Beetle', 'Dangerous Alchemy'];
+      if (card.type === 'Gub') { playDirect(null); return; }
+      if (noTargetCards.includes(card.name)) { playDirect(null); return; }
+      // Cards needing sub-choice: use click flow
+      if (card.name === 'Cricket Song') { handleCardSelect(card); return; }
+      if (card.name === 'Age Old Cure') { handleCardSelect(card); return; }
+      // Barricades dropped on play area (no specific gub): enter targeting mode
+      if (card.type === 'Barricade') { handleCardSelect(card); return; }
+      return;
+    }
+
+    if (zone.type === 'own-gub') {
+      if (card.type === 'Barricade') {
+        setSelectedCard(card);
+        playDirect({ playerId, gubId: zone.gub.instanceId || zone.gub.id });
+      }
+      return;
+    }
+
+    if (zone.type === 'opp-gub') {
+      const needsOppGub = [...OPPONENT_GUB_CARDS, ...(card.type === 'Trap' ? [card.name] : [])];
+      if (needsOppGub.includes(card.name) || card.type === 'Trap') {
+        setSelectedCard(card);
+        playDirect({ playerId: zone.playerId, gubId: zone.gub.instanceId || zone.gub.id });
+      } else if (card.name === 'Spear') {
+        setSelectedCard(card);
+        playDirect({ playerId: zone.playerId, gubId: zone.gub.instanceId || zone.gub.id });
+      }
+      return;
+    }
+
+    if (zone.type === 'opponent-board') {
+      if (card.name === 'Lightning') {
+        // Set up action selection UI
+        setSelectedCard(card);
+        setTargetingMode('Lightning');
+        setPendingLightningTarget({ playerId: zone.playerId });
+        return;
+      }
+      if (card.name === 'Cyclone' || card.name === 'Scout') {
+        setSelectedCard(card);
+        playDirect({ playerId: zone.playerId });
+        return;
+      }
+    }
+  }, [discardMode, isMyTurn, emit, gameId, playerId, handleDiscardCard, handleCardSelect, cancelSelection, setSelectedCard, setTargetingMode, setPendingLightningTarget]);
+
   const getTargetingHint = () => {
     if (!activeSelectedCard) return null;
     switch (activeTargetingMode) {
@@ -308,6 +431,7 @@ function Game() {
   }
 
   return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="game-page">
       <ForestBackground />
 
@@ -503,7 +627,7 @@ function Game() {
             </div>
           )}
 
-          <div className="your-play-area">
+          <DroppableOwnArea className="your-play-area">
             <PlayArea
               playArea={myPlayerData?.playArea || playArea}
               playerName="You"
@@ -511,8 +635,10 @@ function Game() {
               isCurrentPlayer={true}
               onGubClick={activeTargetingMode === 'Barricade' ? handleOwnGubSelect : undefined}
               isTargetable={activeTargetingMode === 'Barricade'}
+              isOwnArea={true}
+              ownPlayerId={playerId}
             />
-          </div>
+          </DroppableOwnArea>
         </section>
 
         <div className="section-divider">
@@ -557,6 +683,16 @@ function Game() {
 
       </main>
     </div>
+
+    {/* Floating card that follows the cursor while dragging */}
+    <DragOverlay modifiers={[liftedCursorModifier]} dropAnimation={null}>
+      {draggedCard ? (
+        <div className="drag-overlay-card">
+          <Card card={draggedCard} isPlayable />
+        </div>
+      ) : null}
+    </DragOverlay>
+    </DndContext>
   );
 }
 

@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { useDroppable } from '@dnd-kit/core';
 import PlayArea from './PlayArea';
 import Card from './Card';
 import './PlayerBoard.css';
@@ -11,17 +12,17 @@ function PlayerBoard({
   selectedGubId = null,
   isTargetable = false,
   isPlayerTargetable = false,
-  isSelected = false
+  isSelected = false,
 }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `opponent-board__${player?.id}`,
+    data: { type: 'opponent-board', playerId: player?.id },
+    disabled: !isPlayerTargetable,
+  });
+
   if (!player) return null;
 
-  const {
-    name,
-    handCount = 0,
-    playArea = { gubs: [], protectedGubs: [], trappedGubs: [] },
-    score = 0,
-    isConnected = true
-  } = player;
+  const { name, handCount = 0, playArea = { gubs: [], protectedGubs: [], trappedGubs: [] }, score = 0, isConnected = true } = player;
 
   const boardClasses = [
     'player-board',
@@ -29,11 +30,13 @@ function PlayerBoard({
     !isConnected ? 'disconnected' : '',
     isTargetable ? 'targetable' : '',
     isPlayerTargetable ? 'player-targetable' : '',
-    isSelected ? 'selected' : ''
+    isSelected ? 'selected' : '',
+    isOver && isPlayerTargetable ? 'drop-over' : '',
   ].filter(Boolean).join(' ');
 
   return (
     <div
+      ref={setNodeRef}
       className={boardClasses}
       onClick={isPlayerTargetable && onPlayerClick ? onPlayerClick : undefined}
       style={isPlayerTargetable ? { cursor: 'pointer' } : undefined}
@@ -45,7 +48,7 @@ function PlayerBoard({
           </span>
           <h3 className="player-name">{name}</h3>
           {isCurrentTurn && <span className="turn-indicator">◆ Their Turn</span>}
-          {isPlayerTargetable && <span className="target-indicator">⚡ Click to target</span>}
+          {isPlayerTargetable && <span className="target-indicator">⚡ Click or drop here</span>}
           {isSelected && <span className="selected-indicator">✓ Selected</span>}
         </div>
         <div className="player-stats">
@@ -71,6 +74,7 @@ function PlayerBoard({
         onGubClick={onGubSelect}
         selectedGubId={selectedGubId}
         isTargetable={isTargetable}
+        opponentPlayerId={player.id}
       />
     </div>
   );
@@ -83,7 +87,7 @@ PlayerBoard.propTypes = {
     handCount: PropTypes.number,
     playArea: PropTypes.object,
     score: PropTypes.number,
-    isConnected: PropTypes.bool
+    isConnected: PropTypes.bool,
   }),
   isCurrentTurn: PropTypes.bool,
   onGubSelect: PropTypes.func,
@@ -91,7 +95,7 @@ PlayerBoard.propTypes = {
   selectedGubId: PropTypes.string,
   isTargetable: PropTypes.bool,
   isPlayerTargetable: PropTypes.bool,
-  isSelected: PropTypes.bool
+  isSelected: PropTypes.bool,
 };
 
 export default PlayerBoard;
