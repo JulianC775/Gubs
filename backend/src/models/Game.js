@@ -345,6 +345,13 @@ class Game {
       return;
     }
 
+    // Cancel any pending Flop Boat interrupt timer
+    if (this.pendingEventTimer) {
+      clearTimeout(this.pendingEventTimer);
+      this.pendingEventTimer = null;
+    }
+    this.pendingEvent = null;
+
     this.status = 'ended';
     this.endedAt = new Date();
     this.winner = this.determineWinner();

@@ -148,7 +148,7 @@ class Player {
    * @returns {Card|null} - The freed Gub or null
    */
   freeGub(gubId) {
-    const gubIndex = this.playArea.trappedGubs.findIndex(gub => gub.id === gubId);
+    const gubIndex = this.playArea.trappedGubs.findIndex(gub => gub.id === gubId || gub.instanceId === gubId);
 
     if (gubIndex === -1) {
       return null;

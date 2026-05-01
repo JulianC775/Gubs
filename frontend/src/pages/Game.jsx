@@ -395,6 +395,9 @@ function Game() {
         playDirect({ playerId: zone.playerId });
         return;
       }
+      // Card can't target a player board — show hint
+      setError(`${card.name} can't target a player directly`);
+      setTimeout(() => setError(null), 2500);
     }
   }, [discardMode, isMyTurn, emit, gameId, playerId, handleDiscardCard, handleCardSelect, cancelSelection, setSelectedCard, setTargetingMode, setPendingLightningTarget]);
 

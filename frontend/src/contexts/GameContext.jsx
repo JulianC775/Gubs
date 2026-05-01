@@ -182,7 +182,7 @@ export const GameProvider = ({ children }) => {
 
     on('gameState:update', handleGameStateUpdate);
     on('player:joined', handlePlayerJoined);
-    on('player:left', handlePlayerLeft);
+    on('player:disconnected', handlePlayerLeft);
     on('player:ready', handlePlayerReady);
     on('game:started', handleGameStarted);
     on('turn:changed', handleTurnChanged);

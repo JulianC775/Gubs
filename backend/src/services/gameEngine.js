@@ -150,7 +150,7 @@ function validateWeaponPlay(game, player, card, target) {
       return { valid: false, error: 'Must target a protected Gub' };
     }
 
-    const protectedGub = targetPlayer.playArea.protectedGubs.find(g => g.id === target.gubId);
+    const protectedGub = targetPlayer.playArea.protectedGubs.find(g => g.id === target.gubId || g.instanceId === target.gubId);
     if (!protectedGub) {
       return { valid: false, error: 'Target must be a protected Gub' };
     }
