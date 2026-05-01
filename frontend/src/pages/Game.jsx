@@ -371,11 +371,7 @@ function Game() {
     }
 
     if (zone.type === 'opp-gub') {
-      const needsOppGub = [...OPPONENT_GUB_CARDS, ...(card.type === 'Trap' ? [card.name] : [])];
-      if (needsOppGub.includes(card.name) || card.type === 'Trap') {
-        setSelectedCard(card);
-        playDirect({ playerId: zone.playerId, gubId: zone.gub.instanceId || zone.gub.id });
-      } else if (card.name === 'Spear') {
+      if (OPPONENT_GUB_CARDS.includes(card.name) || card.type === 'Trap') {
         setSelectedCard(card);
         playDirect({ playerId: zone.playerId, gubId: zone.gub.instanceId || zone.gub.id });
       }
