@@ -36,3 +36,6 @@ coverage/
 # Python (for old main.py)
 __pycache__/
 *.pyc
+
+# Card photos / assets
+card-photos-raw/
