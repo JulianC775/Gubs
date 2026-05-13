@@ -108,7 +108,8 @@ Deck.propTypes = {
   drawnLetters: PropTypes.arrayOf(PropTypes.string),
   discardPile: PropTypes.array,
   onDrawCard: PropTypes.func,
-  canDraw: PropTypes.bool
+  canDraw: PropTypes.bool,
+  alreadyDrawn: PropTypes.bool
 };
 
 export default Deck;
