@@ -22,8 +22,8 @@
 }
 
 .card.playable:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.35), 0 0 16px rgba(45, 95, 93, 0.2);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.3), 0 0 12px rgba(45, 95, 93, 0.18);
 }
 
 .card.selected {

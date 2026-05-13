@@ -63,10 +63,16 @@
   background: rgba(255,255,255,0.3);
 }
 
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
 .hand-card-wrapper {
   flex-shrink: 0;
   transition: margin-top 0.2s ease;
-  touch-action: none; /* required for dnd-kit touch */
+  touch-action: none;
+  animation: cardSlideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hand-card-wrapper:not(.dragging) .card.playable {
