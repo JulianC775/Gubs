@@ -11,7 +11,8 @@ function Deck({
   drawnLetters = [],
   discardPile = [],
   onDrawCard,
-  canDraw = false
+  canDraw = false,
+  alreadyDrawn = false
 }) {
   const topDiscard = discardPile.length > 0 ? discardPile[discardPile.length - 1] : null;
 
@@ -52,9 +53,9 @@ function Deck({
         {/* Draw pile */}
         <div className="draw-pile-container">
           <div
-            className={`draw-pile ${canDraw ? 'can-draw' : ''}`}
+            className={`draw-pile ${canDraw ? 'can-draw' : ''} ${alreadyDrawn ? 'already-drawn' : ''}`}
             onClick={handleDeckClick}
-            title={canDraw ? 'Click to draw a card' : 'Cannot draw right now'}
+            title={canDraw ? 'Click to draw a card' : alreadyDrawn ? 'Already drew this turn' : 'Not your turn'}
           >
             {cardsRemaining > 0 ? (
               <>
@@ -67,6 +68,7 @@ function Deck({
                   </div>
                 </div>
                 {canDraw && <div className="draw-hint">Draw</div>}
+                {alreadyDrawn && <div className="draw-hint drawn-hint">✓ Drawn</div>}
               </>
             ) : (
               <div className="empty-deck">

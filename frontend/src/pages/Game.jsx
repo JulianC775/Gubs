@@ -92,7 +92,9 @@ function Game() {
   const [error, setError] = useState(null);
   const [hasDrawnThisTurn, setHasDrawnThisTurn] = useState(false);
   const [activeEvent, setActiveEvent] = useState(null);
-  const [draggedCard, setDraggedCard] = useState(null); // card being dragged (for DragOverlay)
+  const [draggedCard, setDraggedCard] = useState(null);
+  const [yourTurnToast, setYourTurnToast] = useState(false);
+  const [eventExiting, setEventExiting] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -125,7 +127,7 @@ function Game() {
       setTimeout(() => setError(null), 3000);
     };
 
-    const handleTurnChanged = () => {
+    const handleTurnChanged = (data) => {
       setHasDrawnThisTurn(false);
       setSelectedCard(null);
       setTargetingMode(null);
@@ -134,6 +136,10 @@ function Game() {
       setCricketSongChoice(null);
       setAgeOldCureMode(false);
       setDiscardPileCards([]);
+      if (data?.currentPlayerId === playerId) {
+        setYourTurnToast(true);
+        setTimeout(() => setYourTurnToast(false), 2200);
+      }
     };
 
     const handleDiscardPile = (data) => {
@@ -157,7 +163,9 @@ function Game() {
 
     const handleEventTriggered = (data) => {
       setActiveEvent(data);
-      setTimeout(() => setActiveEvent(null), 4000);
+      setEventExiting(false);
+      setTimeout(() => setEventExiting(true), 3500);
+      setTimeout(() => { setActiveEvent(null); setEventExiting(false); }, 4000);
     };
 
     on('error', handleError);
@@ -491,8 +499,12 @@ function Game() {
         </div>
       )}
 
+      {yourTurnToast && (
+        <div className="your-turn-toast">Your Turn!</div>
+      )}
+
       {activeEvent && (
-        <div className="event-notification">
+        <div className={`event-notification ${eventExiting ? 'exiting' : ''}`}>
           <div className="event-card-name">{activeEvent.eventCard?.name}</div>
           <div className="event-message">{activeEvent.result?.message}</div>
           <div className="event-player">Drawn by {activeEvent.drawingPlayerName}</div>
@@ -647,6 +659,7 @@ function Game() {
             discardPile={[]}
             onDrawCard={handleDrawCard}
             canDraw={isMyTurn && !hasDrawnThisTurn && !discardMode}
+            alreadyDrawn={isMyTurn && hasDrawnThisTurn}
           />
         </div>
 

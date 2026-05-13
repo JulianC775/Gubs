@@ -608,8 +608,10 @@ function playAgeOldCure(game, player, card, target) {
   let rescuedCard;
 
   if (target.cardId) {
-    // Rescue specific card
-    const cardIndex = game.deck.discardPile.findIndex(c => c.id === target.cardId);
+    // Rescue specific card — match by instanceId first, then base id
+    const cardIndex = game.deck.discardPile.findIndex(
+      c => c.instanceId === target.cardId || c.id === target.cardId
+    );
     if (cardIndex === -1) {
       return { success: false, message: 'Card not found in discard pile' };
     }
